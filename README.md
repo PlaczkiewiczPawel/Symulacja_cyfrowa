@@ -29,8 +29,8 @@ o średni dobowy czas uśpienia dla każdej stacji bazowej\
 ● Sporządź wykres średniego dobowego zużycia energii w całym systemie w funkcji progu
 uśpienia L.\
 ● Sporządź wykres średniej dobowej liczby traconych zgłoszeń w całym systemie w funkcji
-progu uśpienia L.\
+progu uśpienia L.
 # 2. Parametry
 μ – zmienna losowa o rozkładzie równomiernym z zakresu <1:30> sekund\
 τ - zmienna losowa o rozkładzie wykładniczym o intensywności λ\
-H - 80%\
+H - 80%
