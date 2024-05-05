@@ -10,12 +10,12 @@ except FileNotFoundError:
 
 # Klasa główna zawiera parametry potrzebne do późniejszego rysowania wykresów itp.
 class Network:
-    def __init__(self, number_of_stations : int):
+    def __init__(self, number_of_stations: int, base_lambda : float):
         self.max_lambda = 0
         self.sum_of_used_energy = 0
         self.sum_of_used_resources = 0
         self.sum_of_lost_connections = 0
-        self.actual_lambda = 0
+        self.actual_lambda = base_lambda
         self.L = 0
         self.H = H
         self.station_id = 0
@@ -26,9 +26,6 @@ class Network:
             self.station_id += 1
     def save_to_file(self):
         pass
-    def lambda_change(self):
-        pass
-    
     
     
 

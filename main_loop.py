@@ -1,6 +1,7 @@
 from network import Network
 from base_station import BaseStation
 from event import *
+import calc
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -21,16 +22,12 @@ try:
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     
-def clock(time : int, time_of_last_event : int, execution_time : int):
-    if time_of_last_event != event.execution_time:
-        time+=event.execution_time
-    else:
-        time+=0
-    logging.info(time)
-    time_of_last_event = execution_time
-    return time, time_of_last_event
+def clock(time : int,  execution_time : int):
+    time = execution_time
+    logger.info(f"[AKTUALNY CZAS] {time}")
+    return time
 
-def execute_event(station_id : int, event_type : EventType, base_station : BaseStation, network: Network): # TODO nwm czy zmiana lambdy ma sens tu, raczej nie bo jest tylko 4 razy na dobe a z każdym eventem cały obiekt network leci do tej funkcji
+def execute_event_on_base_station(station_id : int, event_type : EventType, base_station : BaseStation, network: Network): # TODO nwm czy zmiana lambdy ma sens tu, raczej nie bo jest tylko 4 razy na dobe a z każdym eventem cały obiekt network leci do tej funkcji
     if event_type == EventType.UE_ARRIVAL:
         base_station.add_ue()
     elif event_type == EventType.UE_END_OF_LIFE:
@@ -39,33 +36,44 @@ def execute_event(station_id : int, event_type : EventType, base_station : BaseS
         base_station.wake_up()
     elif event_type == EventType.BS_SLEEP:
         base_station.put_to_sleep()
-    elif event_type == EventType.LAMBDA_CHANGE:
-         network.lambda_change()
     else: 
         logging.error("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")
     
-        
+def change_lambda_in_network(network : Network, base_lambda : float, time : int): #TODO tutaj taki if jak wyżej tylko do zmiany lambdy w zależności od czasu
+    if time == 0:
+        network.actual_lambda = base_lambda/2
+    elif time == calc.hour_to_milis(8):
+        network.actual_lambda = (3*base_lambda)/4
+    elif time == calc.hour_to_milis(14):
+        network.actual_lambda = base_lambda
+    elif time == calc.hour_to_milis(18):
+        network.actual_lambda = (3*base_lambda)/4
+    logging.warning(f"Time : {time} ms, lambda changed to : {network.actual_lambda}")
 
 if __name__ == '__main__':
+    base_lambda = 1.0
     time = T_START
-    time_of_last_event = 0
-    network = Network(N)
-    event_uno = Event(100, 1, EventType.UE_END_OF_LIFE)
-    event_dos = Event(100, 2, EventType.BS_SLEEP)
+    network = Network(N, base_lambda)
     eventCalendar = []
-    eventCalendar.append(event_uno)
-    eventCalendar.append(event_dos)
+    eventCalendar.append(Event(0,-1, EventType.LAMBDA_CHANGE))
+    eventCalendar.append(Event(calc.hour_to_milis(8), -1, EventType.LAMBDA_CHANGE))
+    eventCalendar.append(Event(calc.hour_to_milis(14), -1, EventType.LAMBDA_CHANGE))
+    eventCalendar.append(Event(calc.hour_to_milis(18), -1, EventType.LAMBDA_CHANGE))
     # Mamy 2 listy obiektów - listę stacji bazowych w sieci oraz listę zdarzeń
     # Przykład użycia listy stacji bazowych tworzonej w klasie Network.
     for baseStation in network.stations:
        logger.info(f"ID:{baseStation.id}")
     # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
-    logging.info(time)
     while len(eventCalendar) > 0 and time <= T_MAX:
         event = eventCalendar.pop(0)
         logger.info(f"Typ zdarzenia:{event.event_type}")
-        execute_event(event.station_id, event.event_type, network.stations[event.station_id], network)
-        time, time_of_last_event = clock(time, time_of_last_event, event.execution_time)
+        if event.event_type != EventType.LAMBDA_CHANGE:
+            execute_event_on_base_station(event.station_id, event.event_type, network.stations[event.station_id])
+        elif event.event_type == EventType.LAMBDA_CHANGE:
+            change_lambda_in_network(network, base_lambda, event.execution_time)
+        else: 
+            logging.info("Błędne zdarzenie")
+        time = clock(time, event.execution_time) 
     print("Koniec jest bliski.")
     exit()
        
