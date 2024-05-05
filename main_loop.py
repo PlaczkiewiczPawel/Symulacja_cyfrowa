@@ -55,7 +55,7 @@ if __name__ == '__main__':
     eventCalendar.append(event_uno)
     eventCalendar.append(event_dos)
     # Mamy 2 listy obiektów - listę stacji bazowych w sieci oraz listę zdarzeń
-    # Przykład użycia listy stacji bazowych tworzonej w klasie Network
+    # Przykład użycia listy stacji bazowych tworzonej w klasie Network.
     for baseStation in network.stations:
        logger.info(f"ID:{baseStation.id}")
     # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.

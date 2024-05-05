@@ -20,7 +20,7 @@ class Network:
         self.H = H
         self.station_id = 0
         self.stations = []
-        # Tu powstaje lista obiektów Stacja bazowa, z róznymi id
+        # Tu powstaje lista obiektów Stacja bazowa, z róznymi id.
         for i in range(number_of_stations):
             self.stations.append(BaseStation(self.station_id))
             self.station_id += 1

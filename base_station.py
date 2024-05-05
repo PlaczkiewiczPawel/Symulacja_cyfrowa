@@ -6,7 +6,7 @@ class BaseStation:
         self.sum_of_sleeping_time = 0
     def save_to_file(self):
         pass
-    # Funkcje realizujące zdarzenia
+    # Funkcje realizujące zdarzenia.
     def add_ue(self):
         pass
     def remove_ue(self):

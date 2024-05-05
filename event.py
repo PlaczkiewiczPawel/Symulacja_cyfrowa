@@ -1,6 +1,6 @@
 from enum import Enum
 
-# Typy zdarzeń zapisujemy przy pomocy typu wyliczeniowego - Enum, dla użytkownika czytelny, dla maszyny szybki bo to zwykłe liczby całkowite
+# Typy zdarzeń zapisujemy przy pomocy typu wyliczeniowego - Enum, dla użytkownika czytelny, dla maszyny szybki bo to zwykłe liczby całkowite.
 class EventType(Enum):
         UE_ARRIVAL = 0
         UE_END_OF_LIFE = 1
