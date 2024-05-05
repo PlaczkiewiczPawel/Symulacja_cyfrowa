@@ -4,5 +4,5 @@
     "R" : 273,
     "T_MAX" : 86400000,
     "T_START" : 0,
-    "LOGGER" : "INFO"
+    "LOGGER" : "INF"
 }

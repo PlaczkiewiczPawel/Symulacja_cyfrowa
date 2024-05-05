@@ -12,9 +12,9 @@ try:
         T_MAX = config["T_MAX"]
         T_START = config["T_START"]
         LOGGER = config["LOGGER"]
-        if LOGGER == "ERROR":
+        if LOGGER == "ERR":
             logging.basicConfig(filename='simulation.log', level=logging.ERROR)
-        elif LOGGER == "WARNING":
+        elif LOGGER == "WAR":
             logging.basicConfig(filename='simulation.log', level=logging.WARNING)
         else: 
             logging.basicConfig(filename='simulation.log', level=logging.INFO)    
