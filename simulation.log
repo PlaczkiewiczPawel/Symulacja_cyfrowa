@@ -1,1 +1,8 @@
-.
+INFO:__main__:ID:0
+INFO:__main__:ID:1
+INFO:__main__:ID:2
+INFO:root:0
+INFO:__main__:Typ zdarzenia:EventType.UE_END_OF_LIFE
+INFO:root:100
+INFO:__main__:Typ zdarzenia:EventType.BS_SLEEP
+INFO:root:100
