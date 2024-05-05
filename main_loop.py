@@ -10,6 +10,7 @@ try:
         config = json.load(config_f)
         N = config["N"]
         T_MAX = config["T_MAX"]
+        T_START = config["T_START"]
         LOGGER = config["LOGGER"]
         if LOGGER == "ERROR":
             logging.basicConfig(filename='simulation.log', level=logging.ERROR)
@@ -46,7 +47,7 @@ def execute_event(station_id : int, event_type : EventType, base_station : BaseS
         
 
 if __name__ == '__main__':
-    time = 0
+    time = T_START
     time_of_last_event = 0
     network = Network(N)
     event_uno = Event(100, 1, EventType.UE_END_OF_LIFE)
