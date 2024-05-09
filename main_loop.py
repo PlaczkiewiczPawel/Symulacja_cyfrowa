@@ -65,6 +65,7 @@ if __name__ == '__main__':
        logger.info(f"ID:{baseStation.id}")
     # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
     while len(eventCalendar) > 0 and time <= T_MAX:
+        eventCalendar.sort(key=lambda x: x.execution_time) # zdarzenia muszą być wcześniej POSORTOWANE PO CZASIE!!!!!
         event = eventCalendar.pop(0)
         logger.info(f"Typ zdarzenia:{event.event_type}")
         if event.event_type != EventType.LAMBDA_CHANGE:
