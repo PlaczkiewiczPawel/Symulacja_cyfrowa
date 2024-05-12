@@ -7,6 +7,8 @@ import json
 import logging
 import numpy as np
 import copy
+import matplotlib.pyplot as plt
+import os
 logger = logging.getLogger(__name__)
 
 try:
@@ -16,15 +18,26 @@ try:
         T_MAX = config["T_MAX"]
         T_START = config["T_START"]
         LOGGER = config["LOGGER"]
+        BETA_MAX = 1/config["LAMBDA_MIN"] 
+        BETA_MIN = 1/config["LAMBDA_MAX"]
+        BETA_STEP =  (1/config["LAMBDA_STEP"]) / 10
+        NUMBER_OF_SIMULATIONS = config["NUMBER_OF_SIMULATIONS"]
         if LOGGER == "ERR":
-            logging.basicConfig(filename='simulation.log', level=logging.ERROR)
+            logging.basicConfig(filename='simulation_counter.log', level=logging.ERROR)
         elif LOGGER == "WAR":
-            logging.basicConfig(filename='simulation.log', level=logging.WARNING)
+            logging.basicConfig(filename='simulation_counter.log', level=logging.WARNING)
         else: 
-            logging.basicConfig(filename='simulation.log', level=logging.INFO)    
+            logging.basicConfig(filename='simulation_counter.log', level=logging.INFO)    
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     
+def create_folder_structure_for_saving_data():
+    try:
+        count = count = (len(next(os.walk('wyniki_lambda_max'))[1])) # sprawdza ile folder ma podfolderów
+    except StopIteration:
+        count = 0
+    os.makedirs(f'wyniki_lambda_max/wyniki_{count}')
+    return count
 
 def init_number_of_users(station : BaseStation, generator : Generator):
         no_users_in_station = generator.generate_no_users_in_system() # ilość userów już w systemie
@@ -57,14 +70,17 @@ def init_calendar(network_init : Network, generator : Generator) -> list:
         event_calendar_init = PAST_users_handle(station, no_users_on_station, event_calendar_init, generator)
     return event_calendar_init
 
-def init_simulation():
-    beta_list = np.arange(0.01, 0.101, 0.01) # Tablica do szukania maks lambda
+def init_simulation(count : int, simulation_counter : int):
+    beta_list = np.arange(BETA_MIN, BETA_MAX, BETA_STEP) # Tablica do szukania maks lambda
     beta_list = np.flip(beta_list)
     print(beta_list)
     network_init = Network(N, 0)
     generator = Generator() # Inicjalizacja generatora -> raz na symulacje
     event_calendar_init = init_calendar(network_init, generator)
+    os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja{simulation_counter}/hist/tau')
+    os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja{simulation_counter}/hist/mi')
     return beta_list, network_init, generator, event_calendar_init
+   
 
 def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : list):
     base_beta = round(base_beta, 5)
@@ -130,20 +146,37 @@ def execute_event(event : EventType):
     else: 
         logging.info("Błędne zdarzenie")     
 
+def simulation_loop(event_calendar_beta : list, time : int) -> bool:
+    while len(event_calendar_beta) > 0 and time <= T_MAX:
+        event_calendar_beta.sort(key=lambda x: x.execution_time) # zdarzenia muszą być wcześniej POSORTOWANE PO CZASIE!!!!!
+        event = event_calendar_beta.pop(0)
+        time = round(clock(time, event.execution_time), 2)
+        execute_event(event)
+        return True
+
+def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
+    lambda_actual = 1/base_beta
+    fig = plt.hist(generator.tau_hist, bins=100)
+    plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
+    plt.show()
+    plt = plt.hist(generator.mi_hist, bins=30)
+    fig.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
+    plt.show()
+
 if __name__ == '__main__':
-    beta_list, network_init, generator, event_calendar_init = init_simulation()
-    # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
-    for base_beta in beta_list:
-        time, network_beta, event_calendar_beta = init_next_beta(base_beta, network_init, event_calendar_init)
-        # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
-        while len(event_calendar_beta) > 0 and time <= T_MAX:
-            event_calendar_beta.sort(key=lambda x: x.execution_time) # zdarzenia muszą być wcześniej POSORTOWANE PO CZASIE!!!!!
-            event = event_calendar_beta.pop(0)
-            time = round(clock(time, event.execution_time), 2)
-            execute_event(event)
-    print("Koniec jest bliski.")
-    exit()
-       
+    count = create_folder_structure_for_saving_data()
+    for simulation_counter in range(NUMBER_OF_SIMULATIONS):
+        beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter) 
+        # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
+        for base_beta in beta_list:
+            time, network_beta, event_calendar_beta = init_next_beta(base_beta, network_init, event_calendar_init)
+            # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
+            end = simulation_loop(event_calendar_beta, time)
+            save_data_for_given_beta(base_beta, count, simulation_counter)
+            if end: logger.error(f"W wektorze {beta_list} nie znaleziono szukanej wartości")
+        print("Koniec jest bliski.")
+        exit()
+        
         
 
     

@@ -4,6 +4,10 @@
     "R" : 273,
     "T_MAX" : 86400,
     "T_START" : 0,
+    "LAMBDA_MIN" : 10,
+    "LAMBDA_MAX" : 100,
+    "LAMBDA_STEP" : 20,
+    "NUMBER_OF_SIMULATIONS" : 10,
     "LOGGER" : "WAR"
-    
+
 }
