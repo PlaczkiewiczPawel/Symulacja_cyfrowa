@@ -7,12 +7,11 @@ class Generator():
         self.mi_hist = []
         self.tau_hist = []
     def generate_next_user(self):
-        self.tau = int(np.random.default_rng().exponential(scale=self.beta)*60) # funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
+        self.tau = round(np.random.default_rng().exponential(scale=self.beta)*60,2)# funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
         self.tau_hist.append(self.tau)
-        self.mi = int(np.random.uniform(1,30)) # czas w sekundach na ile czasu user zajmie miejsce w systemie
+        self.mi = round(np.random.uniform(1,31), 2) # czas w sekundach na ile czasu user zajmie miejsce w systemie
         self.mi_hist.append(self.mi)  
-        
     def generate_init_no_users(self):
-        return int(np.random.uniform(1,30))
+        return int(np.random.uniform(1,31))
     def generate_no_users_in_system(self):
-        return int(np.random.uniform(1,30))
+        return int(np.random.uniform(1,31))
