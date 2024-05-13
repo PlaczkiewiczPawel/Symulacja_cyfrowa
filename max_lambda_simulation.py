@@ -3,6 +3,7 @@ from base_station import BaseStation
 from event import *
 from generator import *
 from exepctions import *
+from datetime import datetime
 import calc
 import json
 import logging
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 import os
 import itertools
 import csv
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -81,6 +83,8 @@ def init_logger_for_simulation(count : int, simulation_counter : int):
         logging.basicConfig(filename=logger_path, level=logging.WARNING, force=True, encoding="utf-8")
     else: 
         logging.basicConfig(filename=logger_path, level=logging.INFO, force=True, encoding="utf-8")    
+    logger.warning([f"DATE_TIME_START - {datetime.now()}"])
+
 
 def init_generator(simulation_counter : int):
     try:
@@ -232,9 +236,11 @@ if __name__ == '__main__':
                 draw_save_plot()
                 with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
                     file.write(str(simulation_counter)+";"+str(round(1/old_beta, 2))+';'+str(round(1/base_beta, 2))+";"+str(round(1/network_beta.actual_beta, 2))+'\n')
+                    logger.warning([f"DATE_TIME_END - {datetime.now()}"]) 
                     break
             old_beta = base_beta
-    print("Koniec jest bliski.")    
+    print("Koniec jest bliski.")
+    logger.warning([f"DATE_TIME_END - {datetime.now()}"])    
     exit()
         
         
