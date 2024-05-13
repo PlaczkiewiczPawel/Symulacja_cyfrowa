@@ -27,8 +27,7 @@ try:
         BETA_STEP =  (1/config["LAMBDA_STEP"]) / 10
         SEED_FILE_NUMBER = config["SEED_FILE_NUMBER"]
         SEED_NUMBER = config["SEED_NUMBER"]
-        GENERATOR_MODE = config["GENERATOR_MODE"]
-       
+        GENERATOR_MODE = config["GENERATOR_MODE"]     
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     
