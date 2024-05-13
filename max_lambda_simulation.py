@@ -1,7 +1,7 @@
 from network import Network
 from base_station import BaseStation
 from event import *
-from generator import Generator
+from generator import *
 from exepctions import *
 import calc
 import json
@@ -10,7 +10,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import os
-import time as t
+import itertools
 import csv
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,15 @@ try:
         N = config["N"]
         T_MAX = config["T_MAX"]
         T_START = config["T_START"]
-        LOGGER = config["LOGGER"]
+        LOGGER_MODE = config["LOGGER_MODE"]
+        NUMBER_OF_SIMULATIONS = config["NUMBER_OF_SIMULATIONS"]
         BETA_MAX = 1/config["LAMBDA_MIN"] 
         BETA_MIN = 1/config["LAMBDA_MAX"]
         BETA_STEP =  (1/config["LAMBDA_STEP"]) / 10
-        NUMBER_OF_SIMULATIONS = config["NUMBER_OF_SIMULATIONS"]
+        SEED_FILE_NUMBER = config["SEED_FILE_NUMBER"]
+        SEED_NUMBER = config["SEED_NUMBER"]
+        GENERATOR_MODE = config["GENERATOR_MODE"]
+       
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     
@@ -71,26 +75,56 @@ def init_calendar(network_beta : Network, generator : Generator) -> list:
 
 def init_logger_for_simulation(count : int, simulation_counter : int):
     logger_path = f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/simulation_{simulation_counter}.log'
-    if LOGGER == "ERR":
+    if LOGGER_MODE == "ERR":
         logging.basicConfig(filename=logger_path, level=logging.ERROR, force=True, encoding="utf-8")
-    elif LOGGER == "WAR":
+    elif LOGGER_MODE == "WAR":
         logging.basicConfig(filename=logger_path, level=logging.WARNING, force=True, encoding="utf-8")
     else: 
         logging.basicConfig(filename=logger_path, level=logging.INFO, force=True, encoding="utf-8")    
 
+def init_generator(simulation_counter : int):
+    try:
+        if GENERATOR_MODE == 0:
+            logger.warning("[TRYB_GENERATORA] - PSEUDOLOSOWY")
+            generator = Generator()
+        elif GENERATOR_MODE == 1: 
+            logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 1")
+            if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
+                logger.error("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
+                exit()
+            with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
+                seed = int(next(itertools.islice(csv.reader(file), SEED_NUMBER, None))[0])
+                print(seed)
+            generator = Generator_seeded(seed)
+        elif GENERATOR_MODE == 2:
+            logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 2")
+            if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
+                logger.error("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
+                exit()
+            with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
+                seed = int(next(itertools.islice(csv.reader(file), simulation_counter, None))[0])
+            generator = Generator_seeded(seed)
+        else:
+            logger.error("[TRYB_GENERATORA] - BLAD PRZY WYBORZE GENERATORA, SPRAWDZ PARAMTERY")
+            exit()
+        return generator
+    except FileNotFoundError:
+        logger.error("[BRAK KATALOGU SEEDS] - Uruchom skrypt create_rng.py z katalogu glownego")
+        exit()
+
+
 def init_simulation(count : int, simulation_counter : int):
-    beta_list = np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # [0.01, 1] Tablica do szukania maks lambda 
+    beta_list = [0.9, 0.8] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  #  Tablica do szukania maks lambda 
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi')
     init_logger_for_simulation(count, simulation_counter)
     network_beta = Network(N, 0)
-    generator = Generator() # Inicjalizacja generatora -> raz na symulacje
+    generator = init_generator(simulation_counter)
     event_calendar_init = init_calendar(network_beta, generator)                                                                                                                                                                                                                                                                                                       
     return beta_list, network_beta, generator, event_calendar_init
    
-
 def init_next_beta(base_beta : float, network_beta : Network, event_calendar_init : list):
     base_beta = round(base_beta, 3)
     logger.warning(f"[BETA BAZOWA] -  {base_beta}")
@@ -175,12 +209,10 @@ def draw_save_plot():
     
 def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
     draw_save_plot()
-    with open(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/beta_finder.csv', 'a+', newline='') as file:
-        logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
+    logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
    
 if __name__ == '__main__':
     count = create_folder_structure_for_saving_data()
- 
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
         beta_list, network_beta, generator, event_calendar_init = init_simulation(count, simulation_counter)
         old_beta = -1
