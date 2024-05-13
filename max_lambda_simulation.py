@@ -30,6 +30,7 @@ try:
         GENERATOR_MODE = config["GENERATOR_MODE"]     
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
+    exit()
     
 def create_folder_structure_for_saving_data():
     try:
