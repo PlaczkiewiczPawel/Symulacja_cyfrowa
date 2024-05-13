@@ -64,10 +64,10 @@ def PAST_users_handle(station : BaseStation, no_users_in_station : int, event_ca
             logger.warning(f"USER {user} to {generator.mi - 1}")
     return event_calendar_init
 
-def init_calendar(network_beta : Network, generator : Generator) -> list:
+def init_calendar(network_init : Network, generator : Generator) -> list:
     # Inicjalizacja kalendarza oraz sieci na której potem zaczynamy symulację dla każdej bety
     event_calendar_init = [Event(0,-1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE),Event(calc.hour_to_s(18), -1, EventType.LAMBDA_CHANGE)]
-    for station in network_beta.stations:
+    for station in network_init.stations:
         no_users_on_station, no_users_to_init = init_number_of_users(station, generator)
         event_calendar_init = T_START_users_handle(station, no_users_to_init, event_calendar_init, generator)
         event_calendar_init = PAST_users_handle(station, no_users_on_station, event_calendar_init, generator)
@@ -113,28 +113,27 @@ def init_generator(simulation_counter : int):
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
-    beta_list = [0.9, 0.8] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  #  Tablica do szukania maks lambda 
-    beta_list = np.flip(beta_list)
+    beta_list = [0.010] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.08, 0.09] [0.08, 0.09, 0.1] [0.012, 0.011, 0.010]
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi')
     init_logger_for_simulation(count, simulation_counter)
-    network_beta = Network(N, 0)
+    network_init = Network(N, 0)
     generator = init_generator(simulation_counter)
-    event_calendar_init = init_calendar(network_beta, generator)                                                                                                                                                                                                                                                                                                       
-    return beta_list, network_beta, generator, event_calendar_init
+    event_calendar_init = init_calendar(network_init, generator)                                                                                                                                                                                                                                                                                                       
+    return beta_list, network_init, generator, event_calendar_init
    
-def init_next_beta(base_beta : float, network_beta : Network, event_calendar_init : list):
+def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : list, generator):
     base_beta = round(base_beta, 3)
     logger.warning(f"[BETA BAZOWA] -  {base_beta}")
     time = T_START
-    network_beta = copy.copy(network_beta)
+    network_beta = copy.deepcopy(network_init)
     network_beta.actual_beta = base_beta
     generator.beta = base_beta
     generator.mi_hist = []
     generator.tau_hist = []
-    event_calendar_beta = event_calendar_init.copy() # dla każdej bety startowy kalendarz powinien być taki sam
-    return time, network_beta, event_calendar_beta, base_beta
+    event_calendar_beta = copy.deepcopy(event_calendar_init) # dla każdej bety startowy kalendarz powinien być taki sam
+    return time, network_beta, event_calendar_beta, base_beta, generator
 
 def clock(time : int,  execution_time : int):
     time = execution_time
@@ -182,7 +181,7 @@ def add_user_to_network(event : EventType) -> int:
     else:
         logger.error("BŁĄD, użytkownik zaginął!!!")
 
-def execute_event(event : EventType, base_beta : float):
+def execute_event(event : EventType, base_beta : float, network_beta : Network):
     logger.info(f"[TYP ZDARZENIA] - {event.event_type}")
     if event.event_type in [EventType.UE_END_OF_LIFE, EventType.BS_SLEEP, EventType.BS_WAKE_UP]: 
         execute_event_on_base_station(event.event_type, network_beta.stations[event.station_id])
@@ -196,13 +195,13 @@ def execute_event(event : EventType, base_beta : float):
 def draw_save_plot():
     fig_tau = plt.hist(generator.tau_hist, 30)
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
-    plt.show(block=False)
-    plt.pause(3)
+    #plt.show(block=False)
+    #plt.pause(3)
     plt.close()
     fig_mi = plt.hist(generator.mi_hist, 30)
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
-    plt.show(block=False)
-    plt.pause(3)
+    #plt.show(block=False)
+    #plt.pause(3)
     plt.close()
     
 def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
@@ -212,24 +211,26 @@ def save_data_for_given_beta(base_beta : float, count : int, simulation_counter 
 if __name__ == '__main__':
     count = create_folder_structure_for_saving_data()
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
-        beta_list, network_beta, generator, event_calendar_init = init_simulation(count, simulation_counter)
+        beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
         old_beta = -1
         # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
         for base_beta in beta_list:
-            time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_beta, event_calendar_init)
+            time, network_beta, event_calendar_beta, base_beta, generator = init_next_beta(base_beta, network_init, event_calendar_init, generator)
+            for i in network_beta.stations:
+                logger.info(i.used_resources)
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
             try:
                 while len(event_calendar_beta) > 0 and time <= T_MAX:
                     event_calendar_beta.sort(key=lambda x: x.execution_time) # zdarzenia muszą być wcześniej POSORTOWANE PO CZASIE!!!!!
                     event = event_calendar_beta.pop(0)
                     time = round(clock(time, event.execution_time), 2)
-                    execute_event(event, base_beta)
+                    execute_event(event, base_beta, network_beta)
                 save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
                 logger.error(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
                 draw_save_plot()
                 with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
-                    file.write(str(simulation_counter)+";"+str(round(1/old_beta),3)+';'+str(round(1/base_beta),3)+";"+str(round(1/network_beta.actual_beta,3)+'\n'))
+                    file.write(str(simulation_counter)+";"+str(round(1/old_beta, 2))+';'+str(round(1/base_beta, 2))+";"+str(round(1/network_beta.actual_beta, 2))+'\n')
                     break
             old_beta = base_beta
     print("Koniec jest bliski.")    
