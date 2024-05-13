@@ -111,7 +111,6 @@ def init_generator(simulation_counter : int):
         logger.error("[BRAK KATALOGU SEEDS] - Uruchom skrypt create_rng.py z katalogu glownego")
         exit()
 
-
 def init_simulation(count : int, simulation_counter : int):
     beta_list = [0.9, 0.8] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  #  Tablica do szukania maks lambda 
     beta_list = np.flip(beta_list)
@@ -192,7 +191,6 @@ def execute_event(event : EventType, base_beta : float):
         add_user_to_network(event)
     else: 
         logging.info("Błędne zdarzenie")
-
 
 def draw_save_plot():
     fig_tau = plt.hist(generator.tau_hist, 30)
