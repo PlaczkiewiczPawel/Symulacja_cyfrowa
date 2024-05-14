@@ -1,0 +1,9 @@
+{
+    "json.schemas": [
+
+    ],
+    "[python]": {
+        "editor.semanticHighlighting.enabled": true,
+    },
+      
+}
