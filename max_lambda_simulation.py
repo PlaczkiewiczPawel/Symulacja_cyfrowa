@@ -5,6 +5,7 @@ from generator import *
 from exepctions import *
 from datetime import datetime
 import calc
+from sortedcontainers import SortedList
 import json
 import logging
 import numpy as np
@@ -50,25 +51,26 @@ def init_number_of_users(station : BaseStation, generator : Generator):
         station.used_resources = no_users_in_station
         return no_users_in_station, no_users_to_init
     
-def T_START_users_handle(station : BaseStation, no_users_to_init : int, event_calendar_init : list, generator : Generator) -> list:
+def T_START_users_handle(station : BaseStation, no_users_to_init : int, event_calendar_init : SortedList, generator : Generator) -> SortedList:
     logger.warning(f"[USERS TO INIT IN t=0] - {no_users_to_init}")
     for user in range(no_users_to_init):
         generator.generate_next_user()
-        event_calendar_init.append(Event(T_START, station.id , EventType.UE_ARRIVAL)) # Ci userzy pojawia się w chwili 0, będą generować kolejnych tau = 0
-        event_calendar_init.append(Event(T_START + generator.mi, station.id , EventType.UE_END_OF_LIFE)) # skończą życie po czasie mi
+        event_calendar_init.add(Event(T_START, station.id , EventType.UE_ARRIVAL)) # Ci userzy pojawia się w chwili 0, będą generować kolejnych tau = 0
+        event_calendar_init.add(Event(T_START + generator.mi, station.id , EventType.UE_END_OF_LIFE)) # skończą życie po czasie mi
     return event_calendar_init
 
-def PAST_users_handle(station : BaseStation, no_users_in_station : int, event_calendar_init : list,  generator : Generator):
+def PAST_users_handle(station : BaseStation, no_users_in_station : int, event_calendar_init : SortedList,  generator : Generator) -> SortedList:
     logger.warning(f"[USERS IN STATION BEFORE t=0] - {no_users_in_station}")
     for user in range(no_users_in_station):
             generator.generate_next_user()
-            event_calendar_init.append(Event(T_START + generator.mi - 1, station.id , EventType.UE_END_OF_LIFE)) # zakładamy kwant czasu 1s, zatem user musiał co najmniej tyle być w systemie wcześniej
+            event_calendar_init.add(Event(T_START + generator.mi - 1, station.id , EventType.UE_END_OF_LIFE)) # zakładamy kwant czasu 1s, zatem user musiał co najmniej tyle być w systemie wcześniej
             logger.warning(f"USER {user} to {generator.mi - 1}")
     return event_calendar_init
 
-def init_calendar(network_init : Network, generator : Generator) -> list:
+def init_calendar(network_init : Network, generator : Generator) -> SortedList:
     # Inicjalizacja kalendarza oraz sieci na której potem zaczynamy symulację dla każdej bety
     event_calendar_init = [Event(0,-1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE),Event(calc.hour_to_s(18), -1, EventType.LAMBDA_CHANGE)]
+    event_calendar_init = SortedList(event_calendar_init, key=lambda x: x.execution_time )
     for station in network_init.stations:
         no_users_on_station, no_users_to_init = init_number_of_users(station, generator)
         event_calendar_init = T_START_users_handle(station, no_users_to_init, event_calendar_init, generator)
@@ -128,16 +130,16 @@ def init_simulation(count : int, simulation_counter : int):
     event_calendar_init = init_calendar(network_init, generator)                                                                                                                                                                                                                                                                                                       
     return beta_list, network_init, generator, event_calendar_init
    
-def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : list, generator):
+def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : SortedList, generator):
     base_beta = round(base_beta, 3)
     logger.warning(f"[BETA BAZOWA] -  {base_beta}")
     time = T_START
     network_beta = copy.deepcopy(network_init)
+    event_calendar_beta = copy.deepcopy(event_calendar_init) # dla każdej bety startowy kalendarz powinien być taki sam
     network_beta.actual_beta = base_beta
     generator.beta = base_beta
     generator.mi_hist = []
     generator.tau_hist = []
-    event_calendar_beta = copy.deepcopy(event_calendar_init) # dla każdej bety startowy kalendarz powinien być taki sam
     return time, network_beta, event_calendar_beta, base_beta, generator
 
 def clock(time : int,  execution_time : int):
@@ -170,8 +172,8 @@ def change_beta_in_network(network_beta : Network, base_beta : float, time : int
 
 def create_next_user():
     generator.generate_next_user()
-    event_calendar_beta.append(Event(time + generator.tau, event.station_id, event_type=EventType.UE_ARRIVAL))
-    event_calendar_beta.append(Event(time + generator.tau + generator.mi, event.station_id, event_type=EventType.UE_END_OF_LIFE))
+    event_calendar_beta.add(Event(time + generator.tau, event.station_id, event_type=EventType.UE_ARRIVAL))
+    event_calendar_beta.add(Event(time + generator.tau + generator.mi, event.station_id, event_type=EventType.UE_END_OF_LIFE))
 
 def add_user_to_network(event : EventType) -> int:
     user_added_to_station_id = network_beta.add_ue(event.station_id)
@@ -226,9 +228,9 @@ if __name__ == '__main__':
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
             try:
                 while len(event_calendar_beta) > 0 and time <= T_MAX:
-                    event_calendar_beta.sort(key=lambda x: x.execution_time) # zdarzenia muszą być wcześniej POSORTOWANE PO CZASIE!!!!!
                     event = event_calendar_beta.pop(0)
                     time = round(clock(time, event.execution_time), 2)
+                    print(time)
                     execute_event(event, base_beta, network_beta)
                 save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
