@@ -242,12 +242,9 @@ if __name__ == '__main__':
                     break
             old_beta = base_beta
             logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
+        #Tutaj energetyczne#
+
+        #koniec energetyczntych#
     print("Koniec jest bliski.")
     logger.warning([f"DATE_TIME_END - {datetime.now()}"])    
     exit()
-        
-        
-
-    
-        
-    
