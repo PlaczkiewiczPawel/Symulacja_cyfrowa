@@ -17,6 +17,11 @@ import csv
 
 logger = logging.getLogger(__name__)
 
+class SimulationState(Enum):
+        LAMBDA_SIMULATION = 0
+        L_SIMULATION = 1
+        ENERGY_SIMULATION = 2
+
 try:
     with open ("config.json") as config_f:
         config = json.load(config_f)
@@ -30,7 +35,8 @@ try:
         BETA_STEP =  (1/config["LAMBDA_STEP"]) / 10
         SEED_FILE_NUMBER = config["SEED_FILE_NUMBER"]
         SEED_NUMBER = config["SEED_NUMBER"]
-        GENERATOR_MODE = config["GENERATOR_MODE"]     
+        GENERATOR_MODE = config["GENERATOR_MODE"]
+        SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     exit()
@@ -85,7 +91,7 @@ def init_logger_for_simulation(count : int, simulation_counter : int):
         logging.basicConfig(filename=logger_path, level=logging.WARNING, force=True, encoding="utf-8")
     else: 
         logging.basicConfig(filename=logger_path, level=logging.INFO, force=True, encoding="utf-8")    
-    logger.warning([f"DATE_TIME_START - {datetime.now()}"])
+    logger.warning([f"DATE_TIME_START_BETA - {datetime.now()}"])
 
 
 def init_generator(simulation_counter : int):
@@ -119,7 +125,7 @@ def init_generator(simulation_counter : int):
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
-    beta_list = np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.8, 0.9] [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list = [0.01] # np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.8, 0.9] [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -177,7 +183,7 @@ def create_next_user():
 
 def add_user_to_network(event : EventType) -> int:
     user_added_to_station_id = network_beta.add_ue(event.station_id)
-    if user_added_to_station_id == -1:
+    if network_beta.sum_of_lost_connections > 0 and SIMULATION_STATE==SimulationState.LAMBDA_SIMULATION:
         raise Beta_too_small('This beta doesn\'t do the trick.')
     elif user_added_to_station_id != event.station_id:
              logger.info(f"[DODANO DO INNEJ STACJI] - {user_added_to_station_id}")
@@ -218,6 +224,7 @@ def save_data_for_given_beta(base_beta : float, count : int, simulation_counter 
 if __name__ == '__main__':
     count = create_folder_structure_for_saving_data()
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
+        SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
         beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
         old_beta = -1
         # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
@@ -230,7 +237,6 @@ if __name__ == '__main__':
                 while len(event_calendar_beta) > 0 and time <= T_MAX:
                     event = event_calendar_beta.pop(0)
                     time = round(clock(time, event.execution_time), 2)
-                    print(time)
                     execute_event(event, base_beta, network_beta)
                 save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
@@ -238,12 +244,31 @@ if __name__ == '__main__':
                 draw_save_plot()
                 with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
                     file.write(str(simulation_counter)+";"+str(round(1/old_beta, 2))+';'+str(round(1/base_beta, 2))+";"+str(round(1/network_beta.actual_beta, 2))+'\n')
-                    logger.warning([f"DATE_TIME_END - {datetime.now()}"]) 
+                    logger.warning([f"DATE_TIME_END_BETA - {datetime.now()}"])
+                    max_beta = old_beta
                     break
             old_beta = base_beta
             logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
+        if max_beta == -1:
+            logger.error("[BRAK BETY] - Nie znaleizono ")
+        # SYMULACJA PROGU L
+        logger.warning([f"DATE_TIME_START_L - {datetime.now()}"])
+        SIMULATION_STATE = SimulationState.L_SIMULATION
+        L_list = np.arange(0.05, 0.2, 0.05)
+        if max_beta == -1:  max_beta = beta_list[0] # W wektorze bet jest tylko jedna wartość, która działa.
+        for L in L_list:
+            time, network_beta, event_calendar_beta, base_beta, generator = init_next_beta(max_beta, network_init, event_calendar_init, generator)
+            network_beta.L = L
+            while len(event_calendar_beta) > 0 and time <= T_MAX:
+                event = event_calendar_beta.pop(0)
+                time = round(clock(time, event.execution_time), 2)
+                execute_event(event, base_beta, network_beta)
+                save_data_for_given_beta(base_beta, count, simulation_counter)
+            if network_beta.sum_of_lost_connections/network_beta.sum_of_all_connections < 0.05:
+                logger.warning([f"L found - {L}"])
+                break
         #Tutaj energetyczne#
-
+        SIMULATION_STATE = SimulationState.ENERGY_SIMULATION
         #koniec energetyczntych#
     print("Koniec jest bliski.")
     logger.warning([f"DATE_TIME_END - {datetime.now()}"])    
