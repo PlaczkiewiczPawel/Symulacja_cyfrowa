@@ -125,7 +125,7 @@ def init_generator(simulation_counter : int):
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
-    beta_list = [0.010, 0.011, 0.012] # np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.8, 0.9] [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list =  np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.8, 0.9] [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
