@@ -1,21 +1,13 @@
 import numpy as np
 import json
-try:
-    with open ("config.json") as config_f:
-        config = json.load(config_f)
-        MIN_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MIN"]
-        MAX_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MAX"]
-        MIN_T_PAST  = config["NUMBER_OF_USERS_FROM_PAST_RAND_MIN"]
-        MAX_T_PAST = config["NUMBER_OF_USERS_FROM_PAST_RAND_MAX"]    
-except FileNotFoundError:
-    print("Brak pliku konfiguracyjnego.")
-    exit()
-    
-
 
 class Generator():
-    def __init__(self) -> None:
-        self.beta = 0
+    def __init__(self, base_beta : float, min_t_zero : int, max_t_zero : int, min_t_past : int, max_t_past : int) -> None:
+        self.beta = base_beta
+        self.min_t_zero = min_t_zero
+        self.max_t_zero = max_t_zero
+        self.min_t_past = min_t_past
+        self.max_t_past = max_t_past
         self.tau = 0
         self.mi = 0
         self.mi_hist = []
@@ -26,14 +18,18 @@ class Generator():
         self.mi = round(np.random.uniform(1,31), 2) # czas w sekundach na ile czasu user zajmie miejsce w systemie
         self.mi_hist.append(self.mi)  
     def generate_init_no_users(self):
-        return int(np.random.uniform(MIN_T_ZERO,MAX_T_ZERO))
+        return int(np.random.uniform(self.max_t_zero,self.max_t_zero))
     def generate_no_users_in_system(self):
-        return int(np.random.uniform(MIN_T_PAST,MAX_T_PAST))
+        return int(np.random.uniform(self.min_t_past, self.max_t_past))
     
 class Generator_seeded():
-    def __init__(self, seed : int) -> None:
+    def __init__(self, seed : int, base_beta : float, min_t_zero : int, max_t_zero : int, min_t_past : int, max_t_past : int) -> None:
             self.prng = np.random.RandomState(seed)
-            self.beta = 0
+            self.beta = base_beta
+            self.min_t_zero = min_t_zero
+            self.max_t_zero = max_t_zero
+            self.min_t_past = min_t_past
+            self.max_t_past = max_t_past
             self.tau = 0
             self.mi = 0
             self.mi_hist = []
@@ -44,6 +40,6 @@ class Generator_seeded():
         self.mi = round(self.prng.uniform(1,31), 2) # czas w sekundach na ile czasu user zajmie miejsce w systemie
         #self.mi_hist.append(self.mi)  
     def generate_init_no_users(self):
-        return int(self.prng.uniform(MIN_T_ZERO,MAX_T_ZERO))
+        return int(np.random.uniform(self.max_t_zero,self.max_t_zero))
     def generate_no_users_in_system(self):
-        return int(self.prng.uniform(MIN_T_PAST,MAX_T_PAST))
+        return int(np.random.uniform(self.min_t_past, self.max_t_past))

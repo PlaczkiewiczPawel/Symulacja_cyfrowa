@@ -25,7 +25,13 @@ class SimulationState(Enum):
 try:
     with open ("config.json") as config_f:
         config = json.load(config_f)
+        H = config["H"]
+        R = config["R"]
         N = config["N"]
+        MIN_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MIN"]
+        MAX_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MAX"]
+        MIN_T_PAST  = config["NUMBER_OF_USERS_FROM_PAST_RAND_MIN"]
+        MAX_T_PAST = config["NUMBER_OF_USERS_FROM_PAST_RAND_MAX"]  
         T_MAX = config["T_MAX"]
         T_START = config["T_START"]
         LOGGER_MODE = config["LOGGER_MODE"]
@@ -98,7 +104,7 @@ def init_generator(simulation_counter : int):
     try:
         if GENERATOR_MODE == 0:
             logger.warning("[TRYB_GENERATORA] - PSEUDOLOSOWY")
-            generator = Generator()
+            generator = Generator(0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         elif GENERATOR_MODE == 1: 
             logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 1")
             if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
@@ -107,7 +113,7 @@ def init_generator(simulation_counter : int):
             with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
                 seed = int(next(itertools.islice(csv.reader(file), SEED_NUMBER, None))[0])
                 print(seed)
-            generator = Generator_seeded(seed)
+            generator = Generator_seeded(seed, 0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         elif GENERATOR_MODE == 2:
             logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 2")
             if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
@@ -115,7 +121,7 @@ def init_generator(simulation_counter : int):
                 exit()
             with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
                 seed = int(next(itertools.islice(csv.reader(file), simulation_counter, None))[0])
-            generator = Generator_seeded(seed)
+            generator = Generator_seeded(seed, 0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         else:
             logger.error("[TRYB_GENERATORA] - BLAD PRZY WYBORZE GENERATORA, SPRAWDZ PARAMTERY")
             exit()
@@ -131,12 +137,12 @@ def init_simulation(count : int, simulation_counter : int):
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi')
     init_logger_for_simulation(count, simulation_counter)
-    network_init = Network(N, 0)
+    network_init = Network(N, R, H)
     generator = init_generator(simulation_counter)
     event_calendar_init = init_calendar(network_init, generator)                                                                                                                                                                                                                                                                                                       
     return beta_list, network_init, generator, event_calendar_init
    
-def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : SortedList, generator):
+def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : SortedList):
     base_beta = round(base_beta, 3)
     logger.warning(f"[BETA BAZOWA] -  {base_beta}")
     time = T_START
@@ -146,7 +152,30 @@ def init_next_beta(base_beta : float, network_init : Network, event_calendar_ini
     generator.beta = base_beta
     generator.mi_hist = []
     generator.tau_hist = []
-    return time, network_beta, event_calendar_beta, base_beta, generator
+    return time, network_beta, event_calendar_beta, base_beta
+
+def init_next_L(min_beta : float, L : float,  network_init : Network, event_calendar_init : SortedList):
+    min_beta = round(min_beta, 3)
+    logger.warning(f"[MAX BETA] -  {min_beta}")
+    time = T_START
+    network_beta = copy.deepcopy(network_init)
+    network_beta.L = L
+    event_calendar_beta = copy.deepcopy(event_calendar_init) # dla każdej bety startowy kalendarz powinien być taki sam
+    for base_station in network_beta.stations:
+        if (base_station.used_resources/network_beta.R <= network_beta.L):
+            event_calendar_beta.add(Event(T_START, base_station.id, event_type=EventType.BS_SLEEP)) # usypiamy stację na starcie jeżeli spełniony jest warunek 
+    network_beta.actual_beta = min_beta
+    min_no_of_users_for_no_sleep = int(np.ceil((network_beta.R * network_beta.L)/2))
+    generator.beta = min_beta
+    generator.mi_hist = []
+    generator.tau_hist = []
+    generator.min_t_zero = min_no_of_users_for_no_sleep
+    generator.min_t_past = min_no_of_users_for_no_sleep
+    generator.max_t_zero = generator.min_t_past + 10
+    generator.max_t_past = generator.max_t_past + 10
+    logger.warning(f"[MINIMALNA LICZBA USEEROW] - dla progu {network_beta.L} ZEBY STACJE NIE SPALY {generator.min_t_zero}")
+    return time, network_beta, event_calendar_beta
+    
 
 def clock(time : int,  execution_time : int):
     time = execution_time
@@ -159,8 +188,10 @@ def execute_event_on_base_station(event_type : EventType, base_station : BaseSta
         logging.info(f"[USUNIETO ZE STACJI] - {base_station.id} ")
     elif event_type == EventType.BS_WAKE_UP:
         base_station.wake_up()
+        logging.warning(f"[OBUDZONO STACJE] - {base_station.id} ")
     elif event_type == EventType.BS_SLEEP:
         base_station.put_to_sleep()
+        logging.warning(f"[USPIONO STACJE] - {base_station.id} ")
     else: 
         logging.error("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")
     
@@ -236,7 +267,7 @@ if __name__ == '__main__':
         min_beta = -1
         # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
         for base_beta in beta_list:
-            time, network_beta, event_calendar_beta, base_beta, generator = init_next_beta(base_beta, network_init, event_calendar_init, generator)
+            time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
             for i in network_beta.stations:
                 logger.info(i.used_resources)
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
@@ -260,7 +291,14 @@ if __name__ == '__main__':
         logger.warning([f"DATE_TIME_START_L - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION
         L_list = np.arange(0.05, 0.2, 0.05)
-        print(min_beta)
+        min_beta = 0.06
+        for L_tmp in L_list:
+            time, network_beta, event_calendar_beta = init_next_L(min_beta, L_tmp, network_init, event_calendar_init)
+            # TODO zrobic ze stacje nie usypialy na starcie i przelaczanie polowy z H do uspionej
+            while len(event_calendar_beta) > 0 and time <= T_MAX:
+                event = event_calendar_beta.pop(0)
+                time = round(clock(time, event.execution_time), 2)
+                execute_event(event, min_beta, network_beta)
     print("Koniec jest bliski.")
     logger.warning([f"DATE_TIME_END - {datetime.now()}"])    
     exit()

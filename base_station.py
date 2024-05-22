@@ -11,6 +11,6 @@ class BaseStation:
         if self.used_resources > 0:
             self.used_resources -= 1  
     def wake_up(self):
-        pass
+        self.is_sleeping = False
     def put_to_sleep(self):
-        pass
+        self.is_sleeping = True
