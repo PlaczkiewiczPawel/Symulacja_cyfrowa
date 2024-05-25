@@ -26,13 +26,11 @@ class Network:
             return station_id
         else:
             for station in self.stations:
-                    if station.used_resources < self.R and self.stations[station_id].is_sleeping == False: # sprawdzenie pozostałych + ew. naszej, nie opłaca się jej pozbywać
+                    if station.used_resources < self.R and station.is_sleeping == False: # sprawdzenie pozostałych + ew. naszej, nie opłaca się jej pozbywać
                         station.used_resources += 1
                         return station.id
         self.sum_of_lost_connections += 1
         return -1
-                        
-        
     def save_to_file(self):
         pass
     
