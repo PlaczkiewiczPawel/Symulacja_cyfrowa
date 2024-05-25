@@ -282,7 +282,7 @@ if __name__ == '__main__':
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
         SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
         beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
-        '''
+
         min_beta = -1
         # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
         for base_beta in beta_list:
@@ -294,7 +294,7 @@ if __name__ == '__main__':
                 while len(event_calendar_beta) > 0 and time <= T_MAX:
                     event = event_calendar_beta.pop(0)
                     time = round(clock(time, event.execution_time), 2)
-                    execute_event(event, base_beta, network_beta, 0)
+                    execute_event(event, base_beta, network_beta)
                 save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
                 logger.error(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
@@ -306,7 +306,7 @@ if __name__ == '__main__':
             logger.error("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
             print("Brak odpowiedniej bety w wektorze")
             exit()
-        '''
+   
         # SYMULACJA PROGU L
         logger.warning([f"DATE_TIME_START_L - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION
