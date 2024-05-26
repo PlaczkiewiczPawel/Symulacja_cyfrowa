@@ -7,6 +7,7 @@ class EventType(Enum):
         BS_SLEEP = 2
         BS_WAKE_UP = 3
         LAMBDA_CHANGE = 4
+        DAILY_RESET = 5
 
 # Prosta klasa, która nie zawiera metod i służy jako zawartość kalendarza
 class Event():

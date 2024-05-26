@@ -67,7 +67,6 @@ class Network:
                     
     def choose_for_wake_up(self):
         for station in self.stations:
-            print(station.id, station.is_sleeping)
             if station.is_sleeping == True:
                 return station.id
         return -1

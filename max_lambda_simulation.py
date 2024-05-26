@@ -26,6 +26,7 @@ try:
         H = config["H"]
         R = config["R"]
         N = config["N"]
+        DAYS = config["DAYS"]
         MIN_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MIN"]
         MAX_T_ZERO = config["NUMBER_OF_USERS_T_ZERO_RAND_MAX"]
         MIN_T_PAST  = config["NUMBER_OF_USERS_FROM_PAST_RAND_MIN"]
@@ -44,7 +45,7 @@ try:
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
     exit()
-    
+
 def create_folder_structure_for_saving_data():
     try:
         count = (len(next(os.walk('wyniki_lambda_max'))[1])) # sprawdza ile folder ma podfolderów
@@ -81,7 +82,7 @@ def PAST_users_handle(station : BaseStation, no_users_in_station : int, event_ca
 
 def init_calendar(network_init : Network, generator : Generator) -> SortedList:
     # Inicjalizacja kalendarza oraz sieci na której potem zaczynamy symulację dla każdej bety
-    event_calendar_init = [Event(0,-1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE),Event(calc.hour_to_s(18), -1, EventType.LAMBDA_CHANGE)]
+    event_calendar_init = [Event(0,-1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(18), -1, EventType.LAMBDA_CHANGE), Event(calc.hour_to_s(24), -1, EventType.DAILY_RESET)]
     event_calendar_init = SortedList(event_calendar_init, key=lambda x: x.execution_time)
     for station in network_init.stations:
         no_users_on_station, no_users_to_init = init_number_of_users(station, generator)
@@ -131,7 +132,7 @@ def init_generator(simulation_counter : int):
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
-    beta_list =  np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe [0.01, 0.8, 0.9] [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list =  [0.01, 0.8, 0.9] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -179,49 +180,58 @@ def clock(time : int,  execution_time : int):
     logger.info(f"[AKTUALNY CZAS] {time}")
     return time
 
-def execute_event_on_base_station(event_type : EventType, base_station : BaseStation):
-    if event_type == EventType.UE_END_OF_LIFE:
+def execute_event_on_base_station(type_of_event: EventType, base_station : BaseStation):
+    if type_of_event == EventType.UE_END_OF_LIFE:
         base_station.remove_ue()
         if SIMULATION_STATE == SimulationState.L_SIMULATION and base_station.used_resources / network_beta.R <= network_beta.L and base_station.is_sleeping == False:
             event_calendar_beta.add(Event(time+0.05, base_station.id, EventType.BS_SLEEP))
         logging.info(f"[USUNIETO ZE STACJI] - {base_station.id} ")
-    elif event_type == EventType.BS_WAKE_UP:
+    elif type_of_event == EventType.BS_WAKE_UP:
         wake_up_id = network_beta.choose_for_wake_up()
         no_of_users_to_move = int(base_station.used_resources / 2)
         logger.warning(f"[{time} BUDZENIE PO PRZEPEŁNIENIU {base_station.id} - LICZBA UE DO PRZENIESIENIA {no_of_users_to_move}]")
         if wake_up_id == -1:
             logger.warning(f"[BUDZENIE PO PRZEPEŁNIENIU {base_station.id} - BRAK STACJI DO OBUDZENIA)]")
-            base_station.wake_up_process = False
         else:
             logger.warning(f"[BUDZENIE PO PRZEPEŁNIENIU] - {base_station.id}, PRZENOSZENIE UE DO {wake_up_id} ")
-            network_beta.stations[wake_up_id].wake_up()
+            network_beta.stations[wake_up_id].wake_up(no_of_users_to_move)
             event_to_remove = []
+            event_to_add = []
             for event in event_calendar_beta:
                 if event.station_id == base_station.id and event.event_type == EventType.UE_END_OF_LIFE and no_of_users_to_move > 0:
-                    event_calendar_beta.add(Event(event.execution_time, wake_up_id, EventType.UE_END_OF_LIFE))
+                    event_to_add.append(Event(event.execution_time, wake_up_id, EventType.UE_END_OF_LIFE))
                     event_to_remove.append(event)
                     no_of_users_to_move-=1
+            for event in event_to_add:
+                event_calendar_beta.add(event)
             for event in event_to_remove:
                 event_calendar_beta.remove(event)
-            base_station.wake_up_process = False
-            network_beta.stations[wake_up_id].used_resources = no_of_users_to_move
             logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id} ")
-    elif event_type == EventType.BS_SLEEP:
+    elif type_of_event == EventType.BS_SLEEP:
+        logger.warning(f"{type_of_event, base_station.id}")
         logger.warning(f"[{time} USYPIANIE STACJI {base_station.id} - LICZBA UE DO PRZENIESIENIA {base_station.used_resources}]")
         base_station.put_to_sleep()
         event_to_remove = []
+        event_to_add = []
+        i = 0
+        logger.warning(f"FUNKCJA: {event_calendar_beta[0]}")
         for event in event_calendar_beta:
-            if event.station_id == base_station.id and event.event_type == EventType.UE_END_OF_LIFE:
+            if base_station.id == event.station_id and event.event_type == EventType.UE_END_OF_LIFE:
+                i+=1
+                print(i)
                 user_added_to_station_id, wake_up = network_beta.add_ue_L(event.station_id)
-                if wake_up == True and network_beta.stations[user_added_to_station_id] == False:
-                    event_calendar_beta.add(Event(time+0.5, user_added_to_station_id, EventType.BS_WAKE_UP))
-                    network_beta.stations[user_added_to_station_id] = True
+                if wake_up == True and network_beta.stations[user_added_to_station_id].wake_up_process == False:
+                    event_to_add.append(Event(time+0.5, user_added_to_station_id, EventType.BS_WAKE_UP))
+                    network_beta.stations[user_added_to_station_id].wake_up_process = True
+
                 if user_added_to_station_id != -1:
                     logger.warning(f"[USYPIANIE STACJI {base_station.id} UE przeniesiony do {user_added_to_station_id}]")
-                    event_calendar_beta.add(Event(event.execution_time, user_added_to_station_id, EventType.UE_END_OF_LIFE))
+                    event_to_add.append(Event(event.execution_time, user_added_to_station_id, EventType.UE_END_OF_LIFE))
                 else:
                     logger.warning(f"[USYPIANIE STACJI - UE STRACONY]")
                 event_to_remove.append(event)
+        for event in event_to_add:
+            event_calendar_beta.add(event)
         for event in event_to_remove:
             event_calendar_beta.remove(event)
         logging.warning(f"[USPIONO STACJE] - {base_station.id} ")
@@ -229,13 +239,13 @@ def execute_event_on_base_station(event_type : EventType, base_station : BaseSta
         logging.error("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")
     
 def change_beta_in_network(network_beta : Network, base_beta : float, time : int):
-    if time == 0:
+    if time % 86400 == 0:
         network_beta.actual_beta = round(base_beta/2, 5)
-    elif time == calc.hour_to_s(8):
+    elif time % 86400 == calc.hour_to_s(8):
         network_beta.actual_beta = round((3*base_beta)/4, 5)
-    elif time == calc.hour_to_s(14):
+    elif time % 86400 == calc.hour_to_s(14):
         network_beta.actual_beta = round(base_beta, 10)
-    elif time == calc.hour_to_s(18):
+    elif time % 86400 == calc.hour_to_s(18):
         network_beta.actual_beta = round((3*base_beta)/4, 5)
     generator.beta = network_beta.actual_beta
     logging.error(f"[ZMIANA BETY] - t={time} beta = {network_beta.actual_beta}")
@@ -245,16 +255,17 @@ def create_next_user():
     event_calendar_beta.add(Event(time + generator.tau, event.station_id, event_type=EventType.UE_ARRIVAL))
     
 def add_user_to_network(event : Event) -> int:
+    create_next_user()
     if SIMULATION_STATE == SimulationState.LAMBDA_SIMULATION:
         user_added_to_station_id = network_beta.add_ue_lambda(event.station_id)
     else:
         user_added_to_station_id, wake_up = network_beta.add_ue_L(event.station_id)
-        if wake_up == True and network_beta.stations[user_added_to_station_id] == False:
+        if wake_up == True and network_beta.stations[user_added_to_station_id].wake_up_process == False:
             event_calendar_beta.add(Event(time+0.5, user_added_to_station_id, EventType.BS_WAKE_UP))
-            network_beta.stations[user_added_to_station_id] = True
-    create_next_user()
-    if network_beta.sum_of_lost_connections > 0 and SIMULATION_STATE==SimulationState.LAMBDA_SIMULATION:
-        raise Beta_too_small('This beta doesn\'t do the trick.')
+            network_beta.stations[user_added_to_station_id].wake_up_process = True
+    if user_added_to_station_id == -1:
+        if SIMULATION_STATE==SimulationState.LAMBDA_SIMULATION:
+            raise Beta_too_small('This beta doesn\'t do the trick.')
     elif user_added_to_station_id != event.station_id:
         logger.info(f"[DODANO DO INNEJ STACJI] - {user_added_to_station_id}")
         generator.generator_UE_time_of_life()
@@ -266,16 +277,25 @@ def add_user_to_network(event : Event) -> int:
     else:
         logger.error("BŁĄD, użytkownik zaginął!!!")
         
-def execute_event(event : Event, base_beta : float, network_beta : Network):
+def execute_event(event : Event, base_beta : float, network_beta : Network, day_no : int):
     logger.info(f"[TYP ZDARZENIA] - {event.event_type}")
     if event.event_type in [EventType.UE_END_OF_LIFE, EventType.BS_SLEEP, EventType.BS_WAKE_UP]: 
         execute_event_on_base_station(event.event_type, network_beta.stations[event.station_id])
     elif event.event_type == EventType.LAMBDA_CHANGE:
         change_beta_in_network(network_beta, base_beta, event.execution_time)
+    elif event.event_type == EventType.DAILY_RESET:
+        day_no += 1
+        logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+        event_calendar_beta.add(Event(time, -1, EventType.LAMBDA_CHANGE))
+        event_calendar_beta.add(Event(time + calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE))
+        event_calendar_beta.add(Event(time + calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE))
+        event_calendar_beta.add(Event(time + calc.hour_to_s(18), -1, EventType.LAMBDA_CHANGE))
+        event_calendar_beta.add(Event(time + calc.hour_to_s(24), -1, EventType.DAILY_RESET))
     elif event.event_type == EventType.UE_ARRIVAL:
         add_user_to_network(event)
     else: 
         logging.info("Błędne zdarzenie")
+    return day_no
 
 def draw_save_plot():
     fig_tau = plt.hist(generator.tau_hist, 30)
@@ -298,53 +318,57 @@ def save_data_for_too_small_beta():
      with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
             file.write(str(simulation_counter)+";"+str(round(1/min_beta, 2))+';'+str(round(1/base_beta, 2))+";"+str(round(1/network_beta.actual_beta, 2))+'\n')
             logger.warning([f"DATE_TIME_END_BETA - {datetime.now()}"])
-      
-   
+    
 if __name__ == '__main__':
     count = create_folder_structure_for_saving_data()
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
         SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
         beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
+        print(len(event_calendar_init))
         logger.warning(f"[SYMULACJA LAMBDY START] - {datetime.now()}")
         min_beta = -1
-        # # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
-        # for base_beta in beta_list:
-        #     time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
-        #     for i in network_beta.stations:
-        #         logger.info(i.used_resources)
-        #     # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
-        #     try:
-        #         while len(event_calendar_beta) > 0 and time <= T_MAX:
-        #             event = event_calendar_beta.pop(0)
-        #             time = round(clock(time, event.execution_time), 2)
-        #             execute_event(event, base_beta, network_beta)
-        #         save_data_for_given_beta(base_beta, count, simulation_counter)
-        #     except Beta_too_small:
-        #         logger.error(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
-        #         save_data_for_too_small_beta()
-        #         break
-        #     min_beta = base_beta
-        #     logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
-        # if min_beta == -1: 
-        #     logger.error("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
-        #     print("Brak odpowiedniej bety w wektorze")
-        #     exit()
-        # logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
+        # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
+        for base_beta in beta_list:
+            time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
+            for i in network_beta.stations:
+                logger.info(i.used_resources)
+            # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
+            day_no = 1
+            logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+            try:
+                    while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
+                        event = event_calendar_beta.pop(0)
+                        time = round(clock(time, event.execution_time), 2)
+                        day_no = execute_event(event, base_beta, network_beta, day_no)
+                    save_data_for_given_beta(base_beta, count, simulation_counter)
+            except Beta_too_small:
+                    logger.error(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
+                    save_data_for_too_small_beta()
+                    break
+            min_beta = base_beta
+            logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
+        if min_beta == -1: 
+            logger.error("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
+            print("Brak odpowiedniej bety w wektorze")
+            exit()
+        logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION
-        L_list = np.arange(0.05, 0.2, 0.05)
-        min_beta = 0.02
+        L_list = np.arange(0.5, 0.6, 0.05)
+        min_beta = 0.1
         for L_tmp in L_list:
             logger.warning([f"[SYMULACJA_L={L_tmp}_START] - {datetime.now()}"])
             time, network_beta, event_calendar_beta = init_next_L(min_beta, L_tmp, network_init, event_calendar_init)
-            while len(event_calendar_beta) > 0 and time <= T_MAX:
+            day_no = 1
+            logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+            while len(event_calendar_beta) > 0 and time <= DAYS*calc(24):
                 event = event_calendar_beta.pop(0)
                 time = round(clock(time, event.execution_time), 2)
-                execute_event(event, min_beta, network_beta)
+                day_no = execute_event(event, min_beta, network_beta, day_no)
             if network_beta.sum_of_lost_connections/network_beta.sum_of_all_connections < 0.05:
-                with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
-                    file.write(L_tmp)
-                    logger.warning([f"[SYMULACJA_L={L_tmp}_KONIEC] - {datetime.now()}"])
+                    with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
+                        file.write(str(L_tmp))
+                        logger.warning([f"[SYMULACJA_L={L_tmp}_KONIEC] - {datetime.now()}"])
     logger.warning([f"[SYMULACJA_L_KONIEC] - {datetime.now()}"])
     print("Koniec jest bliski.")
     exit()

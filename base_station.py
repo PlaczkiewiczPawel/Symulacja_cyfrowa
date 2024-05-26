@@ -14,8 +14,10 @@ class BaseStation:
             self.used_resources -= 1
         else:
             pass
-    def wake_up(self):
+    def wake_up(self, no_of_users):
         self.is_sleeping = False
+        self.wake_up_process = False
+        self.used_resources = no_of_users
     def put_to_sleep(self):
         self.is_sleeping = True
         self.used_resources = 0
