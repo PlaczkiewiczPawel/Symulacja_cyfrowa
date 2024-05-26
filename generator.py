@@ -13,10 +13,10 @@ class Generator():
         self.mi_hist = []
         self.tau_hist = []
     def generate_next_user(self):
-        self.tau = round(np.random.default_rng().exponential(scale=self.beta)*60,2)# funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
+        self.tau = round(np.random.default_rng().exponential(scale=self.beta)*60, 3)# funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
         self.tau_hist.append(self.tau)
     def generator_UE_time_of_life(self):
-        self.mi = round(np.random.uniform(1,31), 2) # czas w sekundach na ile czasu user zajmie miejsce w systemie
+        self.mi = round(np.random.uniform(1,31), 3) # czas w sekundach na ile czasu user zajmie miejsce w systemie
         self.mi_hist.append(self.mi)  
     def generate_init_no_users(self):
         return int(np.random.uniform(self.max_t_zero,self.max_t_zero))
@@ -36,10 +36,10 @@ class Generator_seeded():
             self.mi_hist = []
             self.tau_hist = []
     def generate_next_user(self):
-        self.tau = round(self.prng.exponential(scale=self.beta)*60,2)# funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
+        self.tau = round(self.prng.exponential(scale=self.beta)*60,3)# funkcja generuje po ilu minutach pojawi się kolejny user, mnożymy przeliczając na sekundy
         self.tau_hist.append(self.tau) 
     def generator_UE_time_of_life(self):
-        self.mi = round(self.prng.uniform(1,31), 2) # czas w sekundach na ile czasu user zajmie miejsce w systemie
+        self.mi = round(self.prng.uniform(1,31), 3) # czas w sekundach na ile czasu user zajmie miejsce w systemie
         self.mi_hist.append(self.mi)  
     def generate_init_no_users(self):
         return int(self.prng.uniform(self.max_t_zero,self.max_t_zero))
