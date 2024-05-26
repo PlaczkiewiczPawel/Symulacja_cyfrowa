@@ -4,6 +4,7 @@ class BaseStation:
         self.id = station_id
         self.used_resources = 0
         self.is_sleeping = False
+        self.wake_up_process = False
         self.sum_of_sleeping_time = 0
     def save_to_file(self):
         pass
@@ -17,7 +18,4 @@ class BaseStation:
         self.is_sleeping = False
     def put_to_sleep(self):
         self.is_sleeping = True
-        
-
-
-
+        self.used_resources = 0
