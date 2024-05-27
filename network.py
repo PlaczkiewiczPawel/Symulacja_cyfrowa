@@ -21,16 +21,17 @@ class Network:
         for i in range(self.N):
             self.stations.append(BaseStation(self.station_counter))
             self.station_counter += 1
+    
     def add_ue_lambda(self, station_id):
         self.sum_of_all_connections += 1
-        if self.stations[station_id].used_resources < self.R and self.stations[station_id].is_sleeping == False: # sprawdzenie naszej stacji
+        if self.stations[station_id].used_resources < self.R: # sprawdzenie naszej stacji
             self.stations[station_id].used_resources += 1
             return station_id
         else:
             min_res=self.R
             min_id = None
             for station in self.stations:
-                if station.used_resources<min_res and station.is_sleeping == False:
+                if station.used_resources<min_res:
                     min_res=station.used_resources
                     min_id=station.id
             if min_id != None:
