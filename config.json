@@ -3,7 +3,7 @@
     "N" : 3,
     "R" : 273,
     "T_START" : 0,
-    "LAMBDA_MIN" : 20,
+    "LAMBDA_MIN" : 25,
     "LAMBDA_MAX" : 100,
     "LAMBDA_STEP" : 10,
     "NUMBER_OF_SIMULATIONS" : 10,
@@ -15,6 +15,6 @@
     "NUMBER_OF_USERS_T_ZERO_RAND_MAX" : 30,
     "NUMBER_OF_USERS_FROM_PAST_RAND_MIN" : 1,
     "NUMBER_OF_USERS_FROM_PAST_RAND_MAX" : 30,
-    "LOGGER_MODE" : "ERR",
+    "LOGGER_MODE" : "WAR",
     "DAYS" : 7
 }

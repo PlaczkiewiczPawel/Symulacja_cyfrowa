@@ -107,28 +107,28 @@ def init_generator(simulation_counter : int):
             logger.warning("[TRYB_GENERATORA] - PSEUDOLOSOWY")
             generator = Generator(0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         elif GENERATOR_MODE == 1: 
-            logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 1")
+            logger.warning(F"[TRYB_GENERATORA] - DETERMINISTYCZNY 1 dla seedu numer {SEED_NUMBER} z pliku {SEED_FILE_NUMBER}")
             if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
-                logger.error("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
+                logger.warning("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
                 exit()
             with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
                 seed = int(next(itertools.islice(csv.reader(file), SEED_NUMBER, None))[0])
                 print(seed)
             generator = Generator_seeded(seed, 0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         elif GENERATOR_MODE == 2:
-            logger.warning("[TRYB_GENERATORA] - DETERMINISTYCZNY 2")
+            logger.warning(f"[TRYB_GENERATORA] - DETERMINISTYCZNY 2 dla pliku seed {SEED_FILE_NUMBER}")
             if not (0<=SEED_FILE_NUMBER<=29 or 0<=SEED_NUMBER<=999):
-                logger.error("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
+                logger.warning("[TRYB GENERATORA] - PARAMETRY GENERATORA NIEPRAWIDŁOWE")
                 exit()
             with open(f'seeds/seed_{SEED_FILE_NUMBER}.csv', 'r', newline='') as file:
                 seed = int(next(itertools.islice(csv.reader(file), simulation_counter, None))[0])
             generator = Generator_seeded(seed, 0, MIN_T_ZERO, MAX_T_ZERO, MIN_T_PAST, MAX_T_PAST)
         else:
-            logger.error("[TRYB_GENERATORA] - BLAD PRZY WYBORZE GENERATORA, SPRAWDZ PARAMTERY")
+            logger.warning("[TRYB_GENERATORA] - BLAD PRZY WYBORZE GENERATORA, SPRAWDZ PARAMTERY")
             exit()
         return generator
     except FileNotFoundError:
-        logger.error("[BRAK KATALOGU SEEDS] - Uruchom skrypt create_rng.py z katalogu glownego")
+        logger.warning("[BRAK KATALOGU SEEDS] - Uruchom skrypt create_rng.py z katalogu glownego")
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
@@ -242,7 +242,7 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
         base_station.sleep_process = False
         logging.warning(f"[USPIONO STACJE] - {base_station.id} ")
     else: 
-        logging.error("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")
+        logging.warning("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")
     
 def change_beta_in_network(network_beta : Network, base_beta : float, time : int):
     if time % 86400 == 0:
@@ -254,7 +254,7 @@ def change_beta_in_network(network_beta : Network, base_beta : float, time : int
     elif time % 86400 == calc.hour_to_s(18):
         network_beta.actual_beta = round((base_beta * (4/3)), 5)
     generator.beta = network_beta.actual_beta
-    logging.error(f"[ZMIANA BETY] - t={time} beta = {network_beta.actual_beta}")
+    logging.warning(f"[ZMIANA BETY] - t={time} beta = {network_beta.actual_beta}")
 
 def create_next_user():
     generator.generate_next_user()
@@ -281,7 +281,7 @@ def add_user_to_network(event : Event) -> int:
         generator.generator_UE_time_of_life()
         event_calendar_beta.add(Event(time + generator.mi, user_added_to_station_id, event_type=EventType.UE_END_OF_LIFE))
     else:
-        logger.error("BŁĄD, użytkownik zaginął!!!")
+        logger.info("BŁĄD, użytkownik zaginął!!!")
      
 
 def execute_event(event : Event, base_beta : float, network_beta : Network, day_no : int):
@@ -348,22 +348,36 @@ if __name__ == '__main__':
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
             day_no = 1
             logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+            # test_0 = []
+            # test_1 = []
+            # test_2 = []
+            # test_time = []
+            # draw = True
             try:
                     while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
                         event = event_calendar_beta.pop(0)
                         time = round(clock(time, event.execution_time), 3)
+                        # if time < calc.min_to_s(60):
+                        #     test_0.append(len(event_calendar_beta))
+                        #     test_1.append(network_beta.stations[1].used_resources)
+                        #     test_2.append(network_beta.stations[2].used_resources)
+                        #     test_time.append(time)
+                        # if time > calc.min_to_s(60) and draw == True:
+                        #     plt.plot(test_time, test_0)
+                        #     plt.show()
+                        #     draw = False
                         #print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
                         #t.sleep(0.005)
                         day_no = execute_event(event, base_beta, network_beta, day_no)
                     save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
-                    logger.error(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
+                    logger.warning(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
                     save_data_for_too_small_beta()
                     break
             min_beta = base_beta
             logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
         if min_beta == -1: 
-            logger.error("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
+            logger.warning("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
             print("Brak odpowiedniej bety w wektorze")
             exit()
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
