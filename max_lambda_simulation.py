@@ -36,10 +36,10 @@ try:
         NUMBER_OF_SIMULATIONS = config["NUMBER_OF_SIMULATIONS"]
         BETA_MAX = 1/config["LAMBDA_MIN"] 
         BETA_MIN = 1/config["LAMBDA_MAX"]
-        BETA_STEP =  (1/config["LAMBDA_STEP"]) / 10
         SEED_FILE_NUMBER = config["SEED_FILE_NUMBER"]
         SEED_NUMBER = config["SEED_NUMBER"]
         GENERATOR_MODE = config["GENERATOR_MODE"]
+        BETA_STEP = 0.005
         SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
@@ -131,7 +131,8 @@ def init_generator(simulation_counter : int):
         exit()
 
 def init_simulation(count : int, simulation_counter : int):
-    beta_list =  [0.05] #np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    print(BETA_MIN, BETA_MAX)
+    beta_list = [0.016] #np.arange(BETA_MIN, BETA_MAX+BETA_STEP, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -350,7 +351,7 @@ if __name__ == '__main__':
                     while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
                         event = event_calendar_beta.pop(0)
                         time = round(clock(time, event.execution_time), 3)
-                        print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
+                        #print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
                         #t.sleep(0.005)
                         day_no = execute_event(event, base_beta, network_beta, day_no)
                     save_data_for_given_beta(base_beta, count, simulation_counter)
