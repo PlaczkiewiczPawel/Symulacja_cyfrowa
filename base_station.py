@@ -21,6 +21,7 @@ class BaseStation:
         self.used_resources = no_of_users
     def put_to_sleep(self):
         self.is_sleeping = True
+        self.sleep_process = False
         self.used_resources = 0
     def overflow_H(self, no_of_users : int):
         self.wake_up_process = False
