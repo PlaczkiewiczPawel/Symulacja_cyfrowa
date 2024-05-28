@@ -71,7 +71,6 @@ def T_START_users_handle(station : BaseStation, no_users_to_init : int, event_ca
         generator.generate_next_user()
         generator.generator_UE_time_of_life()
         event_calendar_init.add(Event(T_START, station.id , EventType.UE_ARRIVAL)) # Ci userzy pojawia się w chwili 0, będą generować kolejnych tau = 0
-        event_calendar_init.add(Event(T_START + generator.mi, station.id , EventType.UE_END_OF_LIFE)) # skończą życie po czasie mi
     return event_calendar_init
 
 def PAST_users_handle(station : BaseStation, no_users_in_station : int, event_calendar_init : SortedList,  generator : Generator) -> SortedList:
@@ -214,8 +213,11 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
         # event_to_remove = []
         event_to_add = []
         base_station.put_to_sleep()
+        i=0
         for event in event_calendar_beta:
             if base_station.id == event.station_id and event.event_type == EventType.UE_END_OF_LIFE:
+                i+=1
+                print(i)
                 user_added_to_station_id, overflow_start = network_beta.add_ue_L(event.station_id)
                 if overflow_start == True and network_beta.stations[user_added_to_station_id].overflow_process == False:
                         event_to_add.append(Event(time+0.05, user_added_to_station_id, EventType.BS_WAKE_UP))
