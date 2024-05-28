@@ -7,6 +7,7 @@ class BaseStation:
         self.wake_up_process = False
         self.sleep_process = False
         self.sum_of_sleeping_time = 0
+        self.overflow_process = False
     def save_to_file(self):
         pass
     # Funkcje realizujące zdarzenia.  
@@ -21,3 +22,6 @@ class BaseStation:
     def put_to_sleep(self):
         self.is_sleeping = True
         self.used_resources = 0
+    def overflow_H(self, no_of_users : int):
+        self.wake_up_process = False
+        self.used_resources -= no_of_users
