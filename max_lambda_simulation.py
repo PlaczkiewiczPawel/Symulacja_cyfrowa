@@ -35,12 +35,15 @@ try:
         T_START = config["T_START"]
         LOGGER_MODE = config["LOGGER_MODE"]
         NUMBER_OF_SIMULATIONS = config["NUMBER_OF_SIMULATIONS"]
-        BETA_MAX = 1/config["LAMBDA_MIN"] 
-        BETA_MIN = 1/config["LAMBDA_MAX"]
+        BETA_MAX = config["BETA_MAX"] 
+        BETA_MIN = config["BETA_MIN"]
+        BETA_STEP = config["BETA_STEP"]
+        L_MAX = config["L_MAX"] 
+        L_MIN = config["L_MIN"]
+        L_STEP = config["L_STEP"]
         SEED_FILE_NUMBER = config["SEED_FILE_NUMBER"]
         SEED_NUMBER = config["SEED_NUMBER"]
         GENERATOR_MODE = config["GENERATOR_MODE"]
-        BETA_STEP = 0.005
         SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
 except FileNotFoundError:
     print("Brak pliku konfiguracyjnego.")
@@ -133,7 +136,7 @@ def init_generator(simulation_counter : int):
 
 def init_simulation(count : int, simulation_counter : int):
     print(BETA_MIN, BETA_MAX)
-    beta_list = np.arange(BETA_MIN, BETA_MAX+BETA_STEP, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list = np.arange(BETA_MAX, BETA_MIN, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -372,9 +375,9 @@ if __name__ == '__main__':
             exit()
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START dla znalezionej wartosci beta = {min_beta} - {datetime.now()}"])
-        SIMULATION_STATE = SimulationState.L_SIMULATION
-        min_beta = 0.03 
-        L_list = np.arange(0.2, 0.9, 0.05)
+        SIMULATION_STATE = SimulationState.L_SIMULATION 
+        L_list = np.arange(L_MIN, L_MAX+L_STEP, L_STEP)
+        print(L_list)
         for L_tmp in L_list:
             with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
                 file.write(str(f"DLA L: {L_tmp}\n"))
