@@ -135,7 +135,7 @@ def init_generator(simulation_counter : int):
 
 def init_simulation(count : int, simulation_counter : int):
     print(BETA_MIN, BETA_MAX)
-    beta_list = np.arange(BETA_MAX, BETA_MIN+BETA_STEP, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list = np.arange(BETA_MIN, BETA_MAX+BETA_STEP, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -329,7 +329,7 @@ if __name__ == '__main__':
         beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
         logger.warning(f"[SYMULACJA LAMBDY START] - {datetime.now()}")
         min_beta = -1
-        # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
+        #Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
         for base_beta in beta_list:
             time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
             for i in network_beta.stations:
@@ -373,7 +373,7 @@ if __name__ == '__main__':
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START dla znalezionej wartosci beta = {min_beta} - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION 
-        L_list = np.arange(0.2, L_MAX+L_STEP, L_STEP)
+        L_list = np.arange(L_MIN, L_MAX+L_STEP, L_STEP)
         print(L_list)
         for L_tmp in L_list:
             with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
