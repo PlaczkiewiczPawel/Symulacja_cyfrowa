@@ -199,18 +199,10 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
             logger.warning(f"[BUDZENIE PO PRZEPEŁNIENIU] - {base_station.id}, PRZENOSZENIE UE DO {wake_up_id} ")
             network_beta.stations[base_station.id].overflow_H(no_of_users_to_move)
             network_beta.stations[wake_up_id].wake_up(no_of_users_to_move)
-            # event_to_remove = []
-            # event_to_add = []
             for event in event_calendar_beta:
                 if event.station_id == base_station.id and event.event_type == EventType.UE_END_OF_LIFE and no_of_users_to_move > 0:
                     event.station_id = wake_up_id
-                    # event_to_add.append(Event(event.execution_time, wake_up_id, EventType.UE_END_OF_LIFE))
-                    # event_to_remove.append(event)
                     no_of_users_to_move-=1
-            # for event in event_to_add:
-            #     event_calendar_beta.add(event)
-            # for event in event_to_remove:
-            #     event_calendar_beta.remove(event)
             logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id}. Aktualna liczba UE na stacji to {base_station.used_resources}] ")
     elif type_of_event == EventType.BS_SLEEP:
         for station in network_beta.stations:
@@ -232,15 +224,11 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
                 if user_added_to_station_id != -1:
                     logger.warning(f"[USYPIANIE STACJI {base_station.id} UE przeniesiony do {user_added_to_station_id}]")
                     event.station_id = user_added_to_station_id
-                    #event_to_add.append(Event(event.execution_time, user_added_to_station_id, EventType.UE_END_OF_LIFE))
                 else:
                     logger.warning(f"[USYPIANIE STACJI - UE STRACONY]")
-                #event_to_remove.append(event)
         base_station.sleep_process = False
         for event in event_to_add:
             event_calendar_beta.add(event)
-        # for event in event_to_remove:
-        #     event_calendar_beta.remove(event)
         logging.warning(f"[USPIONO STACJE] - {base_station.id} ")
     else: 
         logging.warning("COŚ SIĘ ZEPUSŁO I NIE BYŁO MNIE SŁYCHAĆ")

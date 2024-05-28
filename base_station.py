@@ -4,7 +4,6 @@ class BaseStation:
         self.id = station_id
         self.used_resources = 0
         self.is_sleeping = False
-        self.wake_up_process = False
         self.sleep_process = False
         self.sum_of_sleeping_time = 0
         self.overflow_process = False
@@ -24,5 +23,5 @@ class BaseStation:
         self.sleep_process = False
         self.used_resources = 0
     def overflow_H(self, no_of_users : int):
-        self.wake_up_process = False
+        self.overflow_process = False
         self.used_resources -= no_of_users
