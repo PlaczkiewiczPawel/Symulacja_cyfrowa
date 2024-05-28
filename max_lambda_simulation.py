@@ -135,7 +135,7 @@ def init_generator(simulation_counter : int):
 
 def init_simulation(count : int, simulation_counter : int):
     print(BETA_MIN, BETA_MAX)
-    beta_list = np.arange(BETA_MIN, BETA_MAX+BETA_STEP, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
+    beta_list = np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
     os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
@@ -147,7 +147,8 @@ def init_simulation(count : int, simulation_counter : int):
     return beta_list, network_init, generator, event_calendar_init
    
 def init_next_beta(base_beta : float, network_init : Network, event_calendar_init : SortedList):
-    base_beta = round(base_beta, 3)
+    base_beta = round(base_beta, 5)
+    print(base_beta)
     logger.warning(f"[BETA BAZOWA] -  {base_beta}")
     time = T_START
     network_beta = copy.deepcopy(network_init)
@@ -210,9 +211,9 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
             else:
                 return
         logger.warning(f"[{time} USYPIANIE STACJI {base_station.id} - LICZBA UE DO PRZENIESIENIA {base_station.used_resources}]")
+        # event_to_remove = []
         event_to_add = []
         base_station.put_to_sleep()
-
         for event in event_calendar_beta:
             if base_station.id == event.station_id and event.event_type == EventType.UE_END_OF_LIFE:
                 user_added_to_station_id, overflow_start = network_beta.add_ue_L(event.station_id)
@@ -291,7 +292,7 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
             network_beta.sum_of_all_connections = 0
             lost_all_daily.append(lost_all_ratio_day)
             with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
-                    file.write(str(lost_all_daily)+'\n')
+                    file.write(str(lost_all_ratio_day)+'\n')
     elif event.event_type == EventType.UE_ARRIVAL:
         #print(network_beta.sum_of_all_connections, network_beta.sum_of_lost_connections)
         #print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
@@ -367,14 +368,14 @@ if __name__ == '__main__':
             min_beta = base_beta
             logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
         if min_beta == -1: 
-            logger.warning("[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres.")
-            print("Brak odpowiedniej bety w wektorze")
+            logger.warning(f"[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres. Numer symulacji {simulation_counter}. Brak możliwości symulacji L")
+            print("Brak odpowiedniej bety w wektorze.")
             exit()
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START dla znalezionej wartosci beta = {min_beta} - {datetime.now()}"])
-        SIMULATION_STATE = SimulationState.L_SIMULATION 
+        SIMULATION_STATE = SimulationState.L_SIMULATION
         L_list = np.arange(L_MIN, L_MAX+L_STEP, L_STEP)
-        print(L_list)
+        L_list = np.flip(L_list)
         for L_tmp in L_list:
             with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
                 file.write(str(f"DLA L: {L_tmp}\n"))
