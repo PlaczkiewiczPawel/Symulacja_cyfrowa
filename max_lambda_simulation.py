@@ -167,16 +167,12 @@ def init_next_L(min_beta : float, L : float,  network_init : Network, event_cale
     network_beta.L = L
     event_calendar_beta = copy.deepcopy(event_calendar_init) # dla każdej bety startowy kalendarz powinien być taki sam
     network_beta.actual_beta = min_beta
-    min_no_of_users_for_no_sleep = int(np.ceil((network_beta.R * network_beta.L)/2)) + 1
+    min_no_of_users_for_no_sleep = np.ceil(network_beta.R * network_beta.L)
     generator.beta = min_beta
     generator.mi_hist = []
     generator.tau_hist = []
-    generator.min_t_zero = min_no_of_users_for_no_sleep
-    generator.min_t_past = min_no_of_users_for_no_sleep
-    generator.max_t_zero = generator.min_t_past + 10
-    generator.max_t_past = generator.max_t_past + 10
     lost_all_daily = []
-    logger.warning(f"[MINIMALNA LICZBA USEEROW] - dla progu {network_beta.L} ZEBY STACJE NIE SPALY {generator.min_t_zero}")
+    logger.warning(f"[MINIMALNA LICZBA USEROW] - dla progu {network_beta.L} ZEBY STACJE NIE SPALY {min_no_of_users_for_no_sleep}")
     return time, network_beta, event_calendar_beta, lost_all_daily
     
 
@@ -378,7 +374,7 @@ if __name__ == '__main__':
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START dla znalezionej wartosci beta = {min_beta} - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION 
-        L_list = np.arange(L_MIN, L_MAX+L_STEP, L_STEP)
+        L_list = np.arange(0.2, L_MAX+L_STEP, L_STEP)
         min_beta = 0.03
         print(L_list)
         for L_tmp in L_list:
