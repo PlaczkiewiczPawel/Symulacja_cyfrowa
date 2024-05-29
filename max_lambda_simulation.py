@@ -280,7 +280,7 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
         change_beta_in_network(network_beta, base_beta, event.execution_time)
     elif event.event_type == EventType.DAILY_RESET:
         day_no += 1
-        logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+        logger.error([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
         event_calendar_beta.add(Event(time, -1, EventType.LAMBDA_CHANGE))
         event_calendar_beta.add(Event(time + calc.hour_to_s(8), -1, EventType.LAMBDA_CHANGE))
         event_calendar_beta.add(Event(time + calc.hour_to_s(14), -1, EventType.LAMBDA_CHANGE))
@@ -325,6 +325,7 @@ def save_data_for_too_small_beta():
     
 if __name__ == '__main__':
     count = create_folder_structure_for_saving_data()
+    draw = True
     for simulation_counter in range(NUMBER_OF_SIMULATIONS):
         SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
         beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
@@ -337,28 +338,29 @@ if __name__ == '__main__':
                 logger.info(i.used_resources)
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
             day_no = 1
-            logger.warning([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+            logger.error([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
             # test_0 = []
             # test_1 = []
             # test_2 = []
             # test_time = []
-            # draw = True
+            
             try:
                     while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
                         event = event_calendar_beta.pop(0)
                         time = round(clock(time, event.execution_time), 3)
-                        # if time < calc.min_to_s(3600):
-                        #     test_0.append(network_beta.stations[0].used_resources)
-                        #     test_1.append(network_beta.stations[1].used_resources)
-                        #     test_2.append(network_beta.stations[2].used_resources)
-                        #     test_time.append(time)
-                        # if time > calc.min_to_s(3600) and draw == True:
-                        #     plt.plot(test_time, test_0)
-                        #     plt.plot(test_time, test_1)
-                        #     plt.plot(test_time, test_2)
-                        #     plt.show()
-                        #     draw = False
-                        #print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
+                    #     if time < calc.min_to_s(60):
+                    #         test_0.append(len(event_calendar_beta))
+                    #         # test_0.append(network_beta.stations[0].used_resources)
+                    #         # test_1.append(network_beta.stations[1].used_resources)
+                    #         # test_2.append(network_beta.stations[2].used_resources)
+                    #         test_time.append(time)
+                    #     if time > calc.min_to_s(60) and draw == True:
+                    #         plt.plot(test_time, test_0)
+                    #         # plt.plot(test_time, test_1)
+                    #         # plt.plot(test_time, test_2)
+                    #         plt.show()
+                    #         draw = False
+                        # print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
                         day_no = execute_event(event, base_beta, network_beta, day_no)
                     save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:
