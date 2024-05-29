@@ -315,7 +315,7 @@ def save_data_for_given_beta(base_beta : float, simulation_counter : int):
     logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
  
 def save_data_for_too_small_beta(simulation_counter, min_beta, base_beta, network_beta):
-     draw_save_plot()
+     draw_save_plot(simulation_counter,base_beta)
      with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/max_lambda_finder.csv', 'a+', newline='') as file:
             file.write(str(simulation_counter) + ";" + str(round(1 / min_beta, 2)) + ';' + str(round(1 / base_beta, 2)) + ";" + str(round(1 / network_beta.actual_beta, 2)) + '\n')
             logger.warning([f"DATE_TIME_END_BETA - {datetime.now()}"])
@@ -384,7 +384,7 @@ if __name__ == '__main__':
     NUMBER_OF_SIMULATIONS = 10  # Define your number of simulations
 
     # Use ProcessPoolExecutor with a max of 4 workers
-    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(run_simulation, simulation_counter) for simulation_counter in range(NUMBER_OF_SIMULATIONS)]
         for future in concurrent.futures.as_completed(futures):
             try:
