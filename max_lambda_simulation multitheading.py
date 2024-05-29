@@ -379,7 +379,7 @@ if __name__ == '__main__':
     NUMBER_OF_SIMULATIONS = 10  # Define your number of simulations
 
     # Use ProcessPoolExecutor with a max of 4 workers
-    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(run_simulation, simulation_counter, count) for simulation_counter in range(NUMBER_OF_SIMULATIONS)]
         for future in concurrent.futures.as_completed(futures):
             try:
