@@ -18,6 +18,7 @@ import csv
 import time as t
 import concurrent.futures
 
+COUNT = 0
 logger = logging.getLogger(__name__)
 console = logging.StreamHandler()
 logger.addHandler(console)
@@ -52,13 +53,13 @@ except FileNotFoundError:
 
 def create_folder_structure_for_saving_data():
     try:
-        count = (len(next(os.walk('wyniki_lambda_max'))[1])) # sprawdza ile folder ma podfolderów
+        COUNT = (len(next(os.walk('wyniki_lambda_max'))[1])) # sprawdza ile folder ma podfolderów
     except StopIteration:
-        count = 0
-    os.makedirs(f'wyniki_lambda_max/wyniki_{count}')
-    with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
-            file.write("NUMER_SYMULACJI;MAX_LAMBDA_PRAWIDLOWA;LAMBDA_NIEPRAWIDLOWA;RZECZYWISTA_LAMBDA_NIEPRAWIDLOWA\n")
-    return count
+        COUNT = 0
+    os.makedirs(f'wyniki_lambda_max/wyniki_{COUNT}')
+    # with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/max_lambda_finder.csv', 'a+', newline='') as file:
+    #         file.write("NUMER_SYMULACJI;MAX_LAMBDA_PRAWIDLOWA;LAMBDA_NIEPRAWIDLOWA;RZECZYWISTA_LAMBDA_NIEPRAWIDLOWA\n")
+    return COUNT
 
 def init_number_of_users(station : BaseStation, generator : Generator):
         no_users_in_station = generator.generate_no_users_in_system() # ilość userów już w systemie
@@ -93,8 +94,8 @@ def init_calendar(network_init : Network, generator : Generator) -> SortedList:
         event_calendar_init = PAST_users_handle(station, no_users_on_station, event_calendar_init, generator)
     return event_calendar_init
 
-def init_logger_for_simulation(count : int, simulation_counter : int):
-    logger_path = f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/simulation_{simulation_counter}.log'
+def init_logger_for_simulation(simulation_counter : int):
+    logger_path = f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/simulation_{simulation_counter}.log'
     if LOGGER_MODE == "ERR":
         logging.basicConfig(filename=logger_path, level=logging.ERROR, force=True, encoding="utf-8")
     elif LOGGER_MODE == "WAR":
@@ -134,14 +135,16 @@ def init_generator(simulation_counter : int):
         logger.warning("[BRAK KATALOGU SEEDS] - Uruchom skrypt create_rng.py z katalogu glownego")
         exit()
 
-def init_simulation(count : int, simulation_counter : int):
+def init_simulation(simulation_counter : int):
     print(BETA_MIN, BETA_MAX)
     beta_list = np.arange(BETA_MIN, BETA_MAX, BETA_STEP)  # Wektory tetstowe  [0.1, 0.8, 0.9] [0.010, 0.011, 0.012]
     beta_list = np.flip(beta_list)
     print(beta_list)
-    os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau')
-    os.makedirs(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi')
-    init_logger_for_simulation(count, simulation_counter)
+    os.makedirs(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/tau')
+    os.makedirs(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/mi')
+    with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/max_lambda_finder.csv', 'a+', newline='') as file:
+            file.write("NUMER_SYMULACJI;MAX_LAMBDA_PRAWIDLOWA;LAMBDA_NIEPRAWIDLOWA;RZECZYWISTA_LAMBDA_NIEPRAWIDLOWA\n")
+    init_logger_for_simulation(simulation_counter)
     generator = init_generator(simulation_counter)
     network_init = Network(N, R, H)
     event_calendar_init = init_calendar(network_init, generator)                                                                                                                                                                                                                                                                                                       
@@ -291,7 +294,7 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
             network_beta.sum_of_lost_connections = 0
             network_beta.sum_of_all_connections = 0
             lost_all_daily.append(lost_all_ratio_day)
-            with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
+            with open(f'wyniki_lambda_max/wyniki_{COUNT}/L_finder.csv', 'a+', newline='') as file:
                     file.write(str(lost_all_ratio_day)+'\n')
     elif event.event_type == EventType.UE_ARRIVAL:
         add_user_to_network(event, network_beta, time, event_calendar_beta)
@@ -299,28 +302,29 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
         logging.info("Błędne zdarzenie")
     return day_no
 
-def draw_save_plot():
+def draw_save_plot(simulation_counter,base_beta):
     fig_tau = plt.hist(generator.tau_hist, 30)
-    plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
+    plt.savefig(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
     plt.close()
     fig_mi = plt.hist(generator.mi_hist, 30)
-    plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
+    plt.savefig(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
     plt.close()
     
-def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
-    draw_save_plot()
+def save_data_for_given_beta(base_beta : float, simulation_counter : int):
+    draw_save_plot(simulation_counter,base_beta)
     logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
  
 def save_data_for_too_small_beta(simulation_counter, min_beta, base_beta, network_beta):
      draw_save_plot()
-     with open(f'wyniki_lambda_max/wyniki_{count}/max_lambda_finder.csv', 'a+', newline='') as file:
+     with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/max_lambda_finder.csv', 'a+', newline='') as file:
             file.write(str(simulation_counter) + ";" + str(round(1 / min_beta, 2)) + ';' + str(round(1 / base_beta, 2)) + ";" + str(round(1 / network_beta.actual_beta, 2)) + '\n')
             logger.warning([f"DATE_TIME_END_BETA - {datetime.now()}"])
     
-def run_simulation(simulation_counter, count):
+def run_simulation(simulation_counter):
+    print(COUNT)
     global generator, event_calendar_beta, lost_all_daily
     SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
-    beta_list, network_init, generator, event_calendar_init = init_simulation(count, simulation_counter)
+    beta_list, network_init, generator, event_calendar_init = init_simulation(simulation_counter)
     logger.warning(f"[SYMULACJA LAMBDY START] - {datetime.now()}")
     min_beta = -1
     # Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
@@ -337,7 +341,7 @@ def run_simulation(simulation_counter, count):
                 event = event_calendar_beta.pop(0)
                 time = round(clock(time, event.execution_time), 3)
                 day_no = execute_event(event, base_beta, network_beta, day_no, time, event_calendar_beta)
-            save_data_for_given_beta(base_beta, count, simulation_counter)
+            save_data_for_given_beta(base_beta,simulation_counter)
         except Beta_too_small:
             logger.warning(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
             save_data_for_too_small_beta(simulation_counter, min_beta, base_beta, network_beta)
@@ -355,7 +359,8 @@ def run_simulation(simulation_counter, count):
     L_list = np.arange(L_MIN, L_MAX + L_STEP, L_STEP)
     L_list = np.flip(L_list)
     for L_tmp in L_list:
-        with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
+        print(COUNT)
+        with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/L_finder.csv', 'a+', newline='') as file:
             file.write(str(f"DLA L: {L_tmp}\n"))
         logger.warning(f"[SYMULACJA_L={L_tmp}_START] - {datetime.now()}")
         time, network_beta, event_calendar_beta, lost_all_daily = init_next_L(min_beta, L_tmp, network_init, event_calendar_init, generator)
@@ -367,7 +372,7 @@ def run_simulation(simulation_counter, count):
             day_no = execute_event(event, min_beta, network_beta, day_no, time, event_calendar_beta)
         lost_all_sum = sum(lost_all_daily)
         lost_all_avg = lost_all_sum / DAYS
-        with open(f'wyniki_lambda_max/wyniki_{count}/L_finder.csv', 'a+', newline='') as file:
+        with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/L_finder.csv', 'a+', newline='') as file:
             file.write(str(f"SREDNIA: {lost_all_avg}\n"))
         if lost_all_avg <= 0.05:
             logger.warning(f"[ZNALEZIONO SZUKANE L] - {L_tmp}")
@@ -375,12 +380,12 @@ def run_simulation(simulation_counter, count):
         logger.warning([f"[SYMULACJA_L={L_tmp}_KONIEC] - {datetime.now()}"])
 
 if __name__ == '__main__':
-    count = create_folder_structure_for_saving_data()
+    create_folder_structure_for_saving_data()
     NUMBER_OF_SIMULATIONS = 10  # Define your number of simulations
 
     # Use ProcessPoolExecutor with a max of 4 workers
     with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(run_simulation, simulation_counter, count) for simulation_counter in range(NUMBER_OF_SIMULATIONS)]
+        futures = [executor.submit(run_simulation, simulation_counter) for simulation_counter in range(NUMBER_OF_SIMULATIONS)]
         for future in concurrent.futures.as_completed(futures):
             try:
                 future.result()  # Get the result (if any)
