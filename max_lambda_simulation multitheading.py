@@ -275,7 +275,7 @@ def add_user_to_network(event : Event, network_beta : Network, time : float, eve
         logger.info("BŁĄD, użytkownik zaginął!!!")
      
 
-def execute_event(event : Event, base_beta : float, network_beta : Network, day_no : int, time : float, event_calendar_beta : SortedList):
+def execute_event(event : Event, base_beta : float, network_beta : Network, day_no : int, time : float, event_calendar_beta : SortedList, simulation_counter):
     logger.info(f"[TYP ZDARZENIA] - {event.event_type}")
     if event.event_type in [EventType.UE_END_OF_LIFE, EventType.BS_SLEEP, EventType.BS_WAKE_UP]: 
         execute_event_on_base_station(event.event_type, network_beta.stations[event.station_id], time, network_beta, event_calendar_beta)
@@ -294,7 +294,7 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
             network_beta.sum_of_lost_connections = 0
             network_beta.sum_of_all_connections = 0
             lost_all_daily.append(lost_all_ratio_day)
-            with open(f'wyniki_lambda_max/wyniki_{COUNT}/L_finder.csv', 'a+', newline='') as file:
+            with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/L_finder.csv', 'a+', newline='') as file:
                     file.write(str(lost_all_ratio_day)+'\n')
     elif event.event_type == EventType.UE_ARRIVAL:
         add_user_to_network(event, network_beta, time, event_calendar_beta)
@@ -321,8 +321,7 @@ def save_data_for_too_small_beta(simulation_counter, min_beta, base_beta, networ
             logger.warning([f"DATE_TIME_END_BETA - {datetime.now()}"])
     
 def run_simulation(simulation_counter):
-    print(COUNT)
-    global generator, event_calendar_beta, lost_all_daily
+    global generator, event_calendar_beta, lost_all_daily,SIMULATION_STATE
     SIMULATION_STATE = SimulationState.LAMBDA_SIMULATION
     beta_list, network_init, generator, event_calendar_init = init_simulation(simulation_counter)
     logger.warning(f"[SYMULACJA LAMBDY START] - {datetime.now()}")
@@ -340,7 +339,7 @@ def run_simulation(simulation_counter):
             while len(event_calendar_beta) > 0 and time <= DAYS * calc.hour_to_s(24):
                 event = event_calendar_beta.pop(0)
                 time = round(clock(time, event.execution_time), 3)
-                day_no = execute_event(event, base_beta, network_beta, day_no, time, event_calendar_beta)
+                day_no = execute_event(event, base_beta, network_beta, day_no, time, event_calendar_beta,simulation_counter)
             save_data_for_given_beta(base_beta,simulation_counter)
         except Beta_too_small:
             logger.warning(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
@@ -359,7 +358,6 @@ def run_simulation(simulation_counter):
     L_list = np.arange(L_MIN, L_MAX + L_STEP, L_STEP)
     L_list = np.flip(L_list)
     for L_tmp in L_list:
-        print(COUNT)
         with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/L_finder.csv', 'a+', newline='') as file:
             file.write(str(f"DLA L: {L_tmp}\n"))
         logger.warning(f"[SYMULACJA_L={L_tmp}_START] - {datetime.now()}")
@@ -369,14 +367,14 @@ def run_simulation(simulation_counter):
         while len(event_calendar_beta) > 0 and time <= DAYS * calc.hour_to_s(24):
             event = event_calendar_beta.pop(0)
             time = round(clock(time, event.execution_time), 3)
-            day_no = execute_event(event, min_beta, network_beta, day_no, time, event_calendar_beta)
+            day_no = execute_event(event, min_beta, network_beta, day_no, time, event_calendar_beta,simulation_counter)
         lost_all_sum = sum(lost_all_daily)
         lost_all_avg = lost_all_sum / DAYS
         with open(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/L_finder.csv', 'a+', newline='') as file:
             file.write(str(f"SREDNIA: {lost_all_avg}\n"))
-        if lost_all_avg <= 0.05:
-            logger.warning(f"[ZNALEZIONO SZUKANE L] - {L_tmp}")
-            break
+        # if lost_all_avg <= 0.05:
+        #     logger.warning(f"[ZNALEZIONO SZUKANE L] - {L_tmp}")
+        #     break
         logger.warning([f"[SYMULACJA_L={L_tmp}_KONIEC] - {datetime.now()}"])
 
 if __name__ == '__main__':
