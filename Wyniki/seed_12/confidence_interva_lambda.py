@@ -24,12 +24,13 @@ if __name__ == '__main__':
     mean = round(np.mean(data),3)
     confidence_interval = 0.1
     confidence_interval_values = st.t.interval(confidence_interval, len(data)-1, loc=mean, scale=st.sem(data))
-    confidence_interval_values = (mean - confidence_interval_values[0], confidence_interval_values[1] - mean)
+    conf_low = mean - confidence_interval_values[0]
+    conf_high = confidence_interval_values[1] - mean
     print(confidence_interval_values)
     data_L, data_H = [], []
     for value in data:
-        data_L.append(value-confidence_interval_values[0])
-        data_H.append(value+confidence_interval_values[1])
+        data_L.append(value-conf_low)
+        data_H.append(value+conf_high)
     plt.rc('figure', figsize=(10, 7))
     plt.figure()
     plt.plot(n, data_L, 'o', label="Dolny przedział ufności")
