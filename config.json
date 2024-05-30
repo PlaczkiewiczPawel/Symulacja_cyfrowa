@@ -12,7 +12,7 @@
     "NUMBER_OF_SIMULATIONS" : 10,
     "KOMENTARZ DO SEED" : "0 - tryb pseudolowosy, 1 - tryb deterministyczny każda symulacja na tym samym ziarnie z tego samego pliku, 2 - tryb deterministyczny każda symulacja na innym ziarnie z tego samego pliku.",
     "GENERATOR_MODE" : 2,
-    "SEED_FILE_NUMBER" : 11,
+    "SEED_FILE_NUMBER" : 10,
     "SEED_NUMBER" : 0,
     "NUMBER_OF_USERS_T_ZERO_RAND_MIN" : 1,
     "NUMBER_OF_USERS_T_ZERO_RAND_MAX" : 12,
