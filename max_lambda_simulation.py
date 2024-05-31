@@ -301,20 +301,26 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
         logging.info("Błędne zdarzenie")
     return day_no
 
-def draw_save_plot():
-    fig_tau = plt.hist(generator.tau_hist, 30)
+def draw_save_plot(base_beta : float):
+    fig_tau = plt.hist(generator.tau_hist, 1000)
+    plt.title(f"Histogram rozkładu czasu między kolejnymi zgłoszeniami dla lambda={round((1/base_beta),2)}", fontsize=9)
+    plt.xlabel("Czas pomiędzy kolejnymi zgłoszeniami [s]")
+    plt.ylabel("Ilość wystąpień")
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
     #plt.show(block=False)
     #plt.pause(3)
     plt.close()
     fig_mi = plt.hist(generator.mi_hist, 30)
+    plt.title(f"Histogram rozkładu czasu obsługi")
+    plt.xlabel("Czas obsługi [s]")
+    plt.ylabel("Ilość wystąpień")
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
     #plt.show(block=False)
     #plt.pause(3)
     plt.close()
     
 def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
-    draw_save_plot()
+    draw_save_plot(base_beta)
     logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
  
 def save_data_for_too_small_beta():

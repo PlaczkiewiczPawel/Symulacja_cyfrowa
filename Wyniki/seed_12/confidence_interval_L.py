@@ -51,8 +51,8 @@ if __name__ == '__main__':
     plot_data["mean"] = [elem*100 for elem in plot_data["mean"]]
     plot_data["conf_high-mean"] = [elem*100 for elem in plot_data["conf_high-mean"]]
     plot_data["mean-conf_low"] = [elem*100 for elem in plot_data["mean-conf_low"]]
-    plt.plot(plot_data["L"], plot_data["mean-conf_low"], 'o', label="Dolny przedział ufności")
-    plt.plot(plot_data["L"], plot_data["conf_high-mean"], 'o', label="Górny przedział ufności")
+    plt.plot(plot_data["L"], plot_data["mean-conf_low"], 'x', label="Dolna granica przedziału ufności")
+    plt.plot(plot_data["L"], plot_data["conf_high-mean"], 'x', label="Górna granica przedziału ufności")
     plt.plot(plot_data["L"], plot_data["mean"], 'o', label="Średnia dobowa ilość traconych zgłoszeń")
     plt.axhline(y=5, color='red', label="Szukany próg 5%")
     plt.yticks(np.arange(min(plot_data["mean"]), max(plot_data["mean"]), 1))
