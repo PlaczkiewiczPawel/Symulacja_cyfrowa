@@ -202,7 +202,7 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
                 if event.station_id == base_station.id and event.event_type == EventType.UE_END_OF_LIFE and no_of_users_to_move > 0:
                     event.station_id = wake_up_id
                     no_of_users_to_move-=1
-            logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id}. Aktualna liczba UE na stacji to {base_station.used_resources}] ")
+            logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id}. Aktualna liczba UE na stacji to {network_beta.stations[wake_up_id].used_resources}] ")
     elif type_of_event == EventType.BS_SLEEP:
         for station in network_beta.stations:
             if station.is_sleeping == False and station.id != base_station.id:
@@ -338,47 +338,48 @@ if __name__ == '__main__':
         logger.warning(f"[SYMULACJA LAMBDY START] - {datetime.now()}")
         min_beta = -1
         #Szuakmy maks bety w oparciu o ten sam początkowy stan sieci i kalendarza
-        for base_beta in beta_list:
-            time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
-            for i in network_beta.stations:
-                logger.info(i.used_resources)
-            # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
-            day_no = 1
-            logger.error([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
-            # test_0 = []
-            # test_1 = []
-            # test_2 = []
-            # test_time = []
+        # for base_beta in beta_list:
+        #     time, network_beta, event_calendar_beta, base_beta = init_next_beta(base_beta, network_init, event_calendar_init)
+        #     for i in network_beta.stations:
+        #         logger.info(i.used_resources)
+        #     # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
+        #     day_no = 1
+        #     logger.error([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
+        #     # test_0 = []
+        #     # test_1 = []
+        #     # test_2 = []
+        #     # test_time = []
             
-            try:
-                    while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
-                        event = event_calendar_beta.pop(0)
-                        time = round(clock(time, event.execution_time), 3)
-                    #     if time < calc.min_to_s(60):
-                    #         test_0.append(len(event_calendar_beta))
-                    #         # test_0.append(network_beta.stations[0].used_resources)
-                    #         # test_1.append(network_beta.stations[1].used_resources)
-                    #         # test_2.append(network_beta.stations[2].used_resources)
-                    #         test_time.append(time)
-                    #     if time > calc.min_to_s(60) and draw == True:
-                    #         plt.plot(test_time, test_0)
-                    #         # plt.plot(test_time, test_1)
-                    #         # plt.plot(test_time, test_2)
-                    #         plt.show()
-                    #         draw = False
-                        # print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
-                        day_no = execute_event(event, base_beta, network_beta, day_no)
-                    save_data_for_given_beta(base_beta, count, simulation_counter)
-            except Beta_too_small:
-                    logger.warning(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
-                    save_data_for_too_small_beta()
-                    break
-            min_beta = base_beta
-            logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
-        if min_beta == -1: 
-            logger.warning(f"[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres. Numer symulacji {simulation_counter}. Brak możliwości symulacji L")
-            print("Brak odpowiedniej bety w wektorze.")
-            exit()
+        #     try:
+        #             while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
+        #                 event = event_calendar_beta.pop(0)
+        #                 time = round(clock(time, event.execution_time), 3)
+        #             #     if time < calc.min_to_s(60):
+        #             #         test_0.append(len(event_calendar_beta))
+        #             #         # test_0.append(network_beta.stations[0].used_resources)
+        #             #         # test_1.append(network_beta.stations[1].used_resources)
+        #             #         # test_2.append(network_beta.stations[2].used_resources)
+        #             #         test_time.append(time)
+        #             #     if time > calc.min_to_s(60) and draw == True:
+        #             #         plt.plot(test_time, test_0)
+        #             #         # plt.plot(test_time, test_1)
+        #             #         # plt.plot(test_time, test_2)
+        #             #         plt.show()
+        #             #         draw = False
+        #                 # print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
+        #                 day_no = execute_event(event, base_beta, network_beta, day_no)
+        #             save_data_for_given_beta(base_beta, count, simulation_counter)
+        #     except Beta_too_small:
+        #             logger.warning(f"[DLA_BETA_NIE_UDALO_SIE_ZAKONCZYC] : Dla beta_bazowej={base_beta}, bład nastpil przy rzeczywistej wartosci beta={network_beta.actual_beta}")
+        #             save_data_for_too_small_beta()
+        #             break
+        #     min_beta = base_beta
+        #     logger.warning([f"DATE_TIME_END_BETA_{base_beta} - {datetime.now()}"]) 
+        # if min_beta == -1: 
+        #     logger.warning(f"[BRAK BETY] - W podanym wektorze nie znaleziono wartości lambda do dalszych kroków symulacji. Zmień zakres. Numer symulacji {simulation_counter}. Brak możliwości symulacji L")
+        #     print("Brak odpowiedniej bety w wektorze.")
+        #     exit()
+        min_beta = 0.06
         logger.warning(f"[SYMULACJA LAMBDY KONIEC] - {datetime.now()}")
         logger.warning([f"SYMULACJA L START dla znalezionej wartosci beta = {min_beta} - {datetime.now()}"])
         SIMULATION_STATE = SimulationState.L_SIMULATION
