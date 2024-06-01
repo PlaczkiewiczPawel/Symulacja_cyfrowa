@@ -202,7 +202,7 @@ def execute_event_on_base_station(type_of_event: EventType, base_station : BaseS
                 if event.station_id == base_station.id and event.event_type == EventType.UE_END_OF_LIFE and no_of_users_to_move > 0:
                     event.station_id = wake_up_id
                     no_of_users_to_move-=1
-            logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id}. Aktualna liczba UE na stacji to {base_station.used_resources}] ")
+            logging.warning(f"[OBUDZONO STACJE] - {wake_up_id} i przeniesiono do niej  UE ze stacji {base_station.id}. Aktualna liczba UE na stacji to {network_beta.stations[wake_up_id].used_resources}] ")
     elif type_of_event == EventType.BS_SLEEP:
         for station in network_beta.stations:
             if station.is_sleeping == False and station.id != base_station.id:
@@ -301,20 +301,26 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
         logging.info("Błędne zdarzenie")
     return day_no
 
-def draw_save_plot():
-    fig_tau = plt.hist(generator.tau_hist, 30)
+def draw_save_plot(base_beta : float):
+    fig_tau = plt.hist(generator.tau_hist, 1000)
+    plt.title(f"Histogram rozkładu czasu między kolejnymi zgłoszeniami dla lambda={round((1/base_beta),2)}", fontsize=9)
+    plt.xlabel("Czas pomiędzy kolejnymi zgłoszeniami [s]")
+    plt.ylabel("Ilość wystąpień")
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
     #plt.show(block=False)
     #plt.pause(3)
     plt.close()
     fig_mi = plt.hist(generator.mi_hist, 30)
+    plt.title(f"Histogram rozkładu czasu obsługi")
+    plt.xlabel("Czas obsługi [s]")
+    plt.ylabel("Ilość wystąpień")
     plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
     #plt.show(block=False)
     #plt.pause(3)
     plt.close()
     
 def save_data_for_given_beta(base_beta : float, count : int, simulation_counter : int):
-    draw_save_plot()
+    draw_save_plot(base_beta)
     logger.warning(f"[ZAKONCZONO_DLA_BETA] - {base_beta}")
  
 def save_data_for_too_small_beta():
@@ -338,29 +344,33 @@ if __name__ == '__main__':
                 logger.info(i.used_resources)
             # Główna pętla symulacji - działamy tak długo aż będą obiekty w kalendarzu lub do końca czasu.
             day_no = 1
+            time_plot = 1
             logger.error([f"ZMIANA DNIA: POCZĄTEK DNIA {day_no}"])
-            # test_0 = []
-            # test_1 = []
-            # test_2 = []
-            # test_time = []
-            
+            test_0 = []
+            test_1 = []
+            test_2 = []
+            test_time = []
             try:
                     while len(event_calendar_beta) > 0 and time <= DAYS*calc.hour_to_s(24):
                         event = event_calendar_beta.pop(0)
                         time = round(clock(time, event.execution_time), 3)
-                    #     if time < calc.min_to_s(60):
-                    #         test_0.append(len(event_calendar_beta))
-                    #         # test_0.append(network_beta.stations[0].used_resources)
-                    #         # test_1.append(network_beta.stations[1].used_resources)
-                    #         # test_2.append(network_beta.stations[2].used_resources)
-                    #         test_time.append(time)
-                    #     if time > calc.min_to_s(60) and draw == True:
-                    #         plt.plot(test_time, test_0)
-                    #         # plt.plot(test_time, test_1)
-                    #         # plt.plot(test_time, test_2)
-                    #         plt.show()
-                    #         draw = False
-                        # print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
+                        if time < calc.min_to_s(time_plot):
+                            test_0.append(network_beta.stations[0].used_resources)
+                            test_1.append(network_beta.stations[1].used_resources)
+                            test_2.append(network_beta.stations[2].used_resources)
+                            test_time.append(time)
+                        if time > calc.min_to_s(time_plot) and draw == True:
+                            plt.plot(test_time, test_0, label="Stacja 0")
+                            plt.plot(test_time, test_1, label="Stacja 1")
+                            plt.plot(test_time, test_2, label="Stacja 2")
+                            plt.xlabel("Czas symulacji [s]")
+                            plt.ylabel("Ilość użytkowników na danej stacji")
+                            plt.savefig(r'Wyniki\seed_12\faza.png')
+                            plt.legend()
+                            plt.title(f"Ilość użytkowników na i-tej stacji w funkcji po t={time_plot} min.")
+                            plt.show()
+                            draw = False
+                        #print(time, network_beta.stations[0].used_resources,network_beta.stations[1].used_resources,network_beta.stations[2].used_resources)
                         day_no = execute_event(event, base_beta, network_beta, day_no)
                     save_data_for_given_beta(base_beta, count, simulation_counter)
             except Beta_too_small:

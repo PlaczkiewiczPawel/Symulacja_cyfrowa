@@ -303,12 +303,23 @@ def execute_event(event : Event, base_beta : float, network_beta : Network, day_
     return day_no
 
 def draw_save_plot(simulation_counter,base_beta):
-    fig_tau = plt.hist(generator.tau_hist, 30)
-    plt.savefig(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
+    fig_tau = plt.hist(generator.tau_hist, 1000)
+    plt.title(f"Histogram rozkładu czasu między kolejnymi zgłoszeniami dla lambda={round((1/base_beta),2)}", fontsize=9)
+    plt.xlabel("Czas pomiędzy kolejnymi zgłoszeniami [s]")
+    plt.ylabel("Ilość wystąpień")
+    plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/tau/tau_for_beta_{base_beta}.png')
+    #plt.show(block=False)
+    #plt.pause(3)
     plt.close()
     fig_mi = plt.hist(generator.mi_hist, 30)
-    plt.savefig(f'wyniki_lambda_max/wyniki_{COUNT}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
+    plt.title(f"Histogram rozkładu czasu obsługi")
+    plt.xlabel("Czas obsługi [s]")
+    plt.ylabel("Ilość wystąpień")
+    plt.savefig(f'wyniki_lambda_max/wyniki_{count}/symulacja_{simulation_counter}/hist/mi/mi_for_beta_{base_beta}.png')    
+    #plt.show(block=False)
+    #plt.pause(3)
     plt.close()
+    
     
 def save_data_for_given_beta(base_beta : float, simulation_counter : int):
     draw_save_plot(simulation_counter,base_beta)

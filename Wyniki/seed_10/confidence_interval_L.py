@@ -29,12 +29,12 @@ def read_col(path : str):
     return L, data
 
 if __name__ == '__main__':
-    path = r'Wyniki\seed_12\L_seed_12.csv'      
+    path = r'Wyniki/seed_10/L_seed_10.csv'      
     number_of_cols = csv_no_of_cols(path)
     plot_data = {"L" : [], "mean" : [], "mean-conf_low" : [], "conf_high-mean" : []}
     col = 1
     for i in range(number_of_cols):
-        L, data = read_col(r'Wyniki\seed_12\L_seed_12.csv')
+        L, data = read_col(r'Wyniki/seed_10/L_seed_10.csv')
         col+=1
         mean = round(np.mean(data), 3)
         confidence_interval = 0.1
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     plt.ylabel("Średnia dobowa liczba traconych zgłoszeń. [%]")
     plt.xlabel("Próg L wyłączania stacji bazowej [%]")
     plt.legend(loc = 'upper left')
-    plt.savefig(r'Wyniki\seed_12\L_seed_12.png')
+    plt.savefig(r'Wyniki/seed_10/L_seed_10.png')
     plt.show()      
         
    

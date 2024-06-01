@@ -16,7 +16,7 @@ def read_csv(path : str):
     return data
 
 if __name__ == '__main__':
-    path = r'Wyniki\seed_12\Lambda_seed_12.csv'
+    path = r'Wyniki/seed_10/Lambda_seed_10.csv'
     n = np.arange(0, 10, 1)
     print(n)
     data = read_csv(path)
@@ -43,6 +43,6 @@ if __name__ == '__main__':
     plt.ylabel("λ_max [1/min]")
     plt.xlabel("Numer symulacji")
     plt.legend(loc = 'upper right')
-    plt.savefig(r'Wyniki\seed_12\lambda_seed_12.png')
+    plt.savefig(r'Wyniki/seed_10/lambda_seed_10.png')
     plt.show()
     
